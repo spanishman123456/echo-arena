@@ -1315,16 +1315,23 @@ function sLobby(stage, s){
 function qrSVG(url){ try { const q = qrcode(0, "M"); q.addData(url); q.make(); return q.createSvgTag({cellSize:5, margin:2, scalable:true}); } catch(e){ return ""; } }
 
 const VIDEOS = {
-  video:{id:"mS-L2fpV1Is", label:"Robot sumo · 2:49", title:"The Freakishly Fast World of Robot Sumo", by:"Great Big Story", watch:"How does a robot find its opponent, and how does it know where the ring ends?"},
-  bonus:{id:"kMOssi5IcP0", label:"Maze robot · 0:39", title:"2019 All Japan micromouse, 1st prize run (7.654 s)", by:"JUING-HUEI", watch:"The robot has never seen this maze. How does it know where the walls are?"}
+  robots:{id:"tUs2nyDcls8", label:"Robots sense · 2:07", title:"How Robots Sense, Plan, and Act", by:"World Science Festival", watch:"Sense, plan, act: which part does YOUR code do when the robot reads its distance sensor?"},
+  iot:{id:"EKRVILAohck", label:"Smart life · 1:42", title:"What is the Internet of Things?", by:"LearnFree", watch:"Spot three sensors in this video. Which one could measure distance?"},
+  bats:{id:"kp5jyZtoTIg", label:"Bat sonar · 2:04", title:"Bat Echolocation", by:"IncredibleBats", watch:"The bat shouts and listens for the echo. Your ultrasonic sensor does the same. How?"}
 };
+const ytId = u => { const m = String(u || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : null; };
+function introTabs(){
+  const t = []; const own = ytId(cfg().videoUrl);
+  if (own) VIDEOS.own = {id:own, label:"Teacher's pick", title:"Teacher's pick", by:"YouTube", watch:"How do sensors help machines make smart decisions?"}, t.push(["own","Teacher's pick"]);
+  return t.concat([["robots","Robots sense · 2:07"],["iot","Smart life · 1:42"],["bats","Bat sonar · 2:04"],["film","Our film · 1:17"]]);
+}
 function sIntro(stage, s, ctrl){
-  const tab = App.introTab || "video", v = VIDEOS[tab];
-  region(stage, "intro|" + tab, () => `
+  const tabs = introTabs(), tab = App.introTab && tabs.some(x => x[0] === App.introTab) ? App.introTab : tabs[0][0], v = VIDEOS[tab];
+  region(stage, "intro|" + tab + tabs.length, () => `
     <div style="display:grid;gap:1em">
       <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap">
         <div><div class="eyebrow">Ignite</div><h2 class="big" style="font-size:2.4em">Robots that sense the world</h2></div>
-        <span class="seg">${[["video","Robot sumo · 2:49"],["bonus","Maze robot · 0:39"],["film","Sensor film · 1:17"]].map(([k,l]) => `<button class="${tab===k?"on":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</span>
+        <span class="seg">${tabs.map(([k,l]) => `<button class="${tab===k?"on":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</span>
       </div>
       ${tab === "film" ? `<div class="film" id="film"><canvas id="filmcv"></canvas>
         <div class="start" id="filmstart"><button class="btn pri lg" data-act="filmplay">▶ Play the Echo film</button></div>
@@ -1478,7 +1485,7 @@ function renderDock(s){
   dock.hidden = App.dockHidden; $("#showdock").hidden = !App.dockHidden;
   const i = phaseIdx(s.phase), t = s.timer || {};
   let extra = "";
-  if (s.phase === "intro") extra = `<div class="grp"><span class="lab">Watch</span>${[["video","Sumo"],["bonus","Maze"],["film","Film"]].map(([k,l]) => `<button class="btn sm ${(App.introTab||"video")===k?"pri":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</div>`;
+  if (s.phase === "intro") extra = `<div class="grp"><span class="lab">Watch</span>${introTabs().map(([k,l]) => `<button class="btn sm ${(App.introTab||introTabs()[0][0])===k?"pri":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</div>`;
   if (s.phase === "brief") extra = `<div class="grp"><span class="lab">Warm-up</span><button class="btn sm ${s.revealWarm?"pri":""}" data-act="revealWarm">${s.revealWarm?"Hide answer":"Reveal answer"}</button></div>`;
   if (s.phase === "share") extra = `<div class="grp"><span class="lab">Spotlight</span>${TEAM_IDS.map(id => `<button class="btn sm ${ (s.spotlight||"t1")===id?"pri":""}" data-act="spot" data-team="${id}">${esc(tcfg(id).name)}</button>`).join("")}</div>`;
   if (s.phase === "quiz"){ const qz = s.quiz || {i:0}; extra = `<div class="grp"><span class="lab">Q${qz.i+1}/${QUIZ.length}</span><button class="btn sm" data-act="qprev" ${qz.i<=0?"disabled":""}>◀</button>${!qz.open ? `<button class="btn sm pri" data-act="qopen">Show question</button>` : !qz.reveal ? `<button class="btn sm warn" data-act="qreveal">Reveal answer</button>` : `<button class="btn sm pri" data-act="qnext" ${qz.i>=QUIZ.length-1?"disabled":""}>Next question ▶</button>`}</div>`; }
@@ -1522,7 +1529,7 @@ function tLobby(body, id, s){
       <div class="panel box"><h3>Arena code</h3>${ARENA_CODE.map((r,i) => `<div class="msg">${i+1}. ${esc(r)}</div>`).join("")}<div class="muted">Watch the big screen. The mission starts soon.</div><button class="btn ghost sm" data-act="leave">Change team</button></div>
     </div>`);
 }
-function tIntro(body){ region(body, "ti", () => `<div class="wait"><div class="sonar"><i></i><i></i><i></i><div class="core"></div></div><h2>Eyes on the big screen</h2><p class="muted">Watch for: how does a robot find its opponent, and how does it know where the edge is?</p></div>`); }
+function tIntro(body){ region(body, "ti", () => `<div class="wait"><div class="sonar"><i></i><i></i><i></i><div class="core"></div></div><h2>Eyes on the big screen</h2><p class="muted">Watch for: how do machines use sensors to decide what to do next?</p></div>`); }
 function tBrief(body, id, s){
   const c = tcfg(id), ch = CH[c.challenge], t = team(id), w = ch.warm;
   region(body, "tb|" + JSON.stringify(t.warm) + (s.revealWarm?1:0) + JSON.stringify(t.roles), () => `
@@ -1817,6 +1824,7 @@ function openSetup(){
       <label class="fld">Class<input type="text" id="s-class" value="${esc(c.className)}"></label>
       <label class="fld">Code lab length (minutes)<input type="number" id="s-lab" min="5" max="60" value="${c.labMin}"></label>
       <label class="fld">Teacher PIN<input type="text" id="s-pin" value="${esc(c.pin)}" maxlength="8"></label>
+      <label class="fld">Your own YouTube video for Ignite (optional)<input type="text" id="s-video" value="${esc(c.videoUrl || "")}" placeholder="https://www.youtube.com/watch?v=…"></label>
       <label class="fld">Join link for the QR code<input type="text" id="s-url" value="${esc(c.joinUrl || JOIN_URL_DEFAULT)}" placeholder="https://…"></label>
     </div>
     ${TEAM_IDS.map((id,i) => { const t = c.teams[id]; return `<div class="crit"><div class="grid2" style="grid-template-columns:repeat(4,minmax(0,1fr));font-size:13px">
@@ -1828,7 +1836,7 @@ function openSetup(){
   el.querySelector("#setupf").addEventListener("submit", e => { e.preventDefault(); const v = id => el.querySelector("#" + id).value.trim();
     const teams = {}; TEAM_IDS.forEach(id => teams[id] = {name: v(`s-${id}-name`) || c.teams[id].name, color: /^#[0-9a-f]{3,8}$/i.test(v(`s-${id}-color`)) ? v(`s-${id}-color`) : c.teams[id].color, challenge: v(`s-${id}-ch`), track: v(`s-${id}-tr`)});
     const labMin = Math.max(5, Math.min(60, +v("s-lab") || 20));
-    Store.set("arena/config", {teams, labMin, pin: v("s-pin") || "2026", joinUrl: v("s-url"), className: v("s-class") || "Grade 6A"});
+    Store.set("arena/config", {teams, labMin, pin: v("s-pin") || "2026", joinUrl: v("s-url"), videoUrl: v("s-video"), className: v("s-class") || "Grade 6A"});
     const s = st(); if (s && !labStarted()) setState({timer:{dur: labMin*60000}});
     closeOverlay(); toast("Setup saved"); });
 }
