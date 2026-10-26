@@ -410,13 +410,13 @@ const TRACK_NAMES = { sg:"Silver → Gold", s:"Silver only", g:"Gold only" };
 
 const PHASES = [
   {id:"lobby",  name:"Lobby",            min:0},
-  {id:"intro",  name:"Ignite",           min:3},
+  {id:"intro",  name:"Video",           min:3},
   {id:"brief",  name:"Mission brief",    min:4},
   {id:"lab",    name:"Code lab",         min:20},
   {id:"check",  name:"Self-check",       min:3},
   {id:"share",  name:"Share & feedback", min:8},
   {id:"quiz",   name:"Brain check",      min:4},
-  {id:"podium", name:"Podium",           min:3}
+  {id:"podium", name:"Leaderboard",           min:3}
 ];
 const phaseIdx = id => PHASES.findIndex(p => p.id === id);
 
@@ -1399,7 +1399,7 @@ function sIntro(stage, s, ctrl){
   region(stage, "intro|" + tab + tabs.length, () => `
     <div style="display:grid;gap:1em">
       <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap">
-        <div><div class="eyebrow">Ignite</div><h2 class="big" style="font-size:2.4em">Robots that sense the world</h2></div>
+        <div><div class="eyebrow">Video</div><h2 class="big" style="font-size:2.4em">Robots that sense the world</h2></div>
         <span class="seg">${tabs.map(([k,l]) => `<button class="${tab===k?"on":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</span>
       </div>
       ${tab === "film" ? `<div class="film" id="film"><canvas id="filmcv"></canvas>
@@ -1541,7 +1541,7 @@ function sPodium(stage, s){
   const slot = (place, cls) => { const r = rc.find(x => x.place === place); if (!r) return `<div class="pod ${cls} empty"><div class="plinth">${place}</div></div>`; const c = tcfg(r.id);
     return `<div class="pod ${cls}" style="--tc:${c.color}">${medalSVG(r.medal, place === 1 ? 120 : 88)}<b>${esc(c.name)}</b><span class="muted tnum">${r.finished ? "Finished in " + fmt(r.ms) : r.done + "/" + r.total + " stages"}</span><div class="plinth">${place}</div></div>`; };
   region(stage, key, () => `
-    <div style="text-align:center"><div class="eyebrow">Mission debrief</div><h2 class="big">The podium</h2></div>
+    <div style="text-align:center"><div class="eyebrow">Mission debrief</div><h2 class="big">Leaderboard</h2></div>
     ${s.podiumShown ? `<div class="podium">${slot(2,"p2")}${slot(1,"p1")}${slot(3,"p3")}</div>` : `<div class="wait"><div class="sonar" style="width:240px"><i></i><i></i><i></i><div class="core"></div></div><h2>And the medals go to…</h2></div>`}
     <div class="panel" style="padding:1em 1.2em"><div class="eyebrow" style="margin-bottom:.5em">Arena points</div><div class="tablewrap"><table class="sb"><thead><tr><th>Team</th><th>Mission</th><th>Medal</th><th class="n">Stages</th><th class="n">Brain check</th><th class="n">Feedback</th><th class="n">Hints</th><th class="n">Total</th></tr></thead><tbody>
       ${pts.map(p => { const c = tcfg(p.id), r = rc.find(x => x.id === p.id); return `<tr><td><span style="display:flex;align-items:center;gap:.5em">${emb(p.id)}<b>${esc(c.name)}</b></span></td><td>${esc(CH[c.challenge].name)}</td><td>${r.medal && s.podiumShown ? medalSVG(r.medal, 34) : "—"}</td><td class="n">${(p.b.silver||0)+(p.b.gold||0)}</td><td class="n">${p.b.quiz||0}</td><td class="n">${p.b.feedback||0}</td><td class="n">${p.b.hints||0}</td><td class="n disp" style="font-size:1.3em">${p.total}</td></tr>`; }).join("")}
@@ -1558,7 +1558,7 @@ function renderDock(s){
   if (s.phase === "brief") extra = `<div class="grp"><span class="lab">Warm-up</span><button class="btn sm ${s.revealWarm?"pri":""}" data-act="revealWarm">${s.revealWarm?"Hide answer":"Reveal answer"}</button></div>`;
   if (s.phase === "share") extra = `<div class="grp"><span class="lab">Spotlight</span>${TEAM_IDS.map(id => `<button class="btn sm ${ (s.spotlight||"t1")===id?"pri":""}" data-act="spot" data-team="${id}">${esc(tcfg(id).name)}</button>`).join("")}</div>`;
   if (s.phase === "quiz"){ const qz = s.quiz || {i:0}; extra = `<div class="grp"><span class="lab">Q${qz.i+1}/${QUIZ.length}</span><button class="btn sm" data-act="qprev" ${qz.i<=0?"disabled":""}>◀</button>${!qz.open ? `<button class="btn sm pri" data-act="qopen">Show question</button>` : !qz.reveal ? `<button class="btn sm warn" data-act="qreveal">Reveal answer</button>` : `<button class="btn sm pri" data-act="qnext" ${qz.i>=QUIZ.length-1?"disabled":""}>Next question ▶</button>`}</div>`; }
-  if (s.phase === "podium") extra = `<div class="grp"><span class="lab">Ceremony</span><button class="btn sm pri" data-act="podium">${s.podiumShown?"Replay":"Reveal podium"}</button><button class="btn sm" data-act="report">Lesson report</button><button class="btn sm" data-act="exits">Exit tickets</button></div>`;
+  if (s.phase === "podium") extra = `<div class="grp"><span class="lab">Ceremony</span><button class="btn sm pri" data-act="podium">${s.podiumShown?"Replay":"Reveal leaderboard"}</button><button class="btn sm" data-act="report">Lesson report</button><button class="btn sm" data-act="exits">Exit tickets</button></div>`;
   const key = JSON.stringify([App.introTab, s.phase, s.revealWarm, s.spotlight, s.quiz, s.podiumShown, t.running, Snd.on, Store.mode, cfg().teams]);
   region($("#dockin"), key, () => `
     <div class="grp"><span class="lab">Phase</span><button class="btn sm" data-act="prev" ${i<=0?"disabled":""}>◀</button><b style="min-width:8.5em;text-align:center">${esc(PHASES[i].name)}</b><button class="btn sm pri" data-act="next" ${i>=PHASES.length-1?"disabled":""}>Next ▶</button></div>
@@ -1894,7 +1894,7 @@ function openSetup(){
       <label class="fld">Code lab length (minutes)<input type="number" id="s-lab" min="5" max="60" value="${c.labMin}"></label>
       <label class="fld">Colours<select id="s-theme"><option value="calm" ${(c.theme||"calm")==="calm"?"selected":""}>Calm light (easy on the eyes)</option><option value="dark" ${c.theme==="dark"?"selected":""}>Arena dark</option></select></label>
       <label class="fld">Teacher PIN<input type="text" id="s-pin" value="${esc(c.pin)}" maxlength="8"></label>
-      <label class="fld">Your own YouTube video for Ignite (optional)<input type="text" id="s-video" value="${esc(c.videoUrl || "")}" placeholder="https://www.youtube.com/watch?v=…"></label>
+      <label class="fld">Your own YouTube video for the Video phase (optional)<input type="text" id="s-video" value="${esc(c.videoUrl || "")}" placeholder="https://www.youtube.com/watch?v=…"></label>
       <label class="fld">Join link for the QR code<input type="text" id="s-url" value="${esc(c.joinUrl || JOIN_URL_DEFAULT)}" placeholder="https://…"></label>
     </div>
     ${TEAM_IDS.map((id,i) => { const t = c.teams[id]; return `<div class="crit"><div class="grid2" style="grid-template-columns:repeat(4,minmax(0,1fr));font-size:13px">
