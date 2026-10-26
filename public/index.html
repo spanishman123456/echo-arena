@@ -692,8 +692,9 @@ const Store = (() => {
     online = d.online || {};
     if (d.v !== v){ v = d.v; Object.keys(docs).forEach(k => delete docs[k]); Object.assign(docs, d.docs || {}); queue.forEach(applyOp);
       if (App.view === "control" && App.unlocked){
-        if (docs["arena/state"]) lsSet("echoArena.cache", docs);
-        else if (!queue.length){ const c = lsGet("echoArena.cache"); if (c && c["arena/state"]) setTimeout(() => { if (!docs["arena/state"]) Object.keys(c).forEach(k => write({op:"set", path:k, data:c[k]})); }, 0); }
+        const ok = x => x && x["arena/state"] && x["arena/state"].session;
+        if (ok(docs)) lsSet("echoArena.cache", docs);
+        else if (!queue.length) setTimeout(() => { if (ok(docs) || queue.length) return; const c = lsGet("echoArena.cache"); if (ok(c)) Object.keys(c).forEach(k => write({op:"set", path:k, data:c[k]})); else newSession(); }, 300);
       } }
     if (changed) notify();
   }
@@ -731,14 +732,14 @@ const Store = (() => {
   }
   return { init,
     set:(path, data) => write({op:"set", path, data:clone(data)}),
-    update:(path, data) => write({op:"update", path, data:clone(data)}),
+    update:(path, data) => { const s0 = docs["arena/state"]; if (path.startsWith("teams/") && s0 && s0.session) data = {...data, session:s0.session}; return write({op:"update", path, data:clone(data)}); },
     del:path => write({op:"del", path}),
     presence(){}, get:p => docs[p], all:() => docs, on:fn => listeners.push(fn),
     get mode(){ return mode; }, get live(){ return live; }, canWrite:true, get online(){ return online; } };
 })();
 
 /* ---------------- Derived state ---------------- */
-const st = () => Store.get("arena/state") || null;
+const st = () => { const s = Store.get("arena/state"); return s && s.session ? s : null; };
 const cfg = () => deepMerge(DEFAULT_CONFIG, Store.get("arena/config") || {});
 const team = id => { const s = st(); const d = Store.get("teams/" + id); return (d && s && d.session === s.session) ? d : {}; };
 const tcfg = id => cfg().teams[id];
@@ -1681,7 +1682,7 @@ function ceremony(id){
 }
 
 /* ---------------- Actions ---------------- */
-function setState(patch){ return Store.update("arena/state", patch); }
+function setState(patch){ const s = st(); if (!s) return; return Store.set("arena/state", deepMerge(s, patch)); }
 function newSession(){
   const sid = "s" + Date.now().toString(36);
   const c = cfg();
@@ -1691,7 +1692,7 @@ function newSession(){
   App.draft = {}; App.local = {}; App.seenFinish = null;
 }
 function bootControl(){
-  if (!st()){ const c = lsGet("echoArena.cache"); if (Store.mode === "server" && c && c["arena/state"]) Object.keys(c).forEach(k => Store.set(k, c[k])); else newSession(); }
+  if (!st()){ const c = lsGet("echoArena.cache"); if (Store.mode === "server" && c && c["arena/state"] && c["arena/state"].session) Object.keys(c).forEach(k => Store.set(k, c[k])); else newSession(); }
   if (!Store.get("arena/config")) Store.set("arena/config", clone(DEFAULT_CONFIG));
   Store.presence({kind:"control"});
 }
