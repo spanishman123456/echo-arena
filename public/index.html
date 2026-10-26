@@ -690,7 +690,11 @@ const Store = (() => {
   function applyServer(d){
     const onl = JSON.stringify(d.online || {}), changed = d.v !== v || onl !== JSON.stringify(online);
     online = d.online || {};
-    if (d.v !== v){ v = d.v; Object.keys(docs).forEach(k => delete docs[k]); Object.assign(docs, d.docs || {}); queue.forEach(applyOp); if (App.view === "control") lsSet("echoArena.cache", docs); }
+    if (d.v !== v){ v = d.v; Object.keys(docs).forEach(k => delete docs[k]); Object.assign(docs, d.docs || {}); queue.forEach(applyOp);
+      if (App.view === "control" && App.unlocked){
+        if (docs["arena/state"]) lsSet("echoArena.cache", docs);
+        else if (!queue.length){ const c = lsGet("echoArena.cache"); if (c && c["arena/state"]) setTimeout(() => { if (!docs["arena/state"]) Object.keys(c).forEach(k => write({op:"set", path:k, data:c[k]})); }, 0); }
+      } }
     if (changed) notify();
   }
   function setLive(x){ if (x !== live){ live = x; notify(); } }

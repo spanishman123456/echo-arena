@@ -11,11 +11,11 @@ const SAVE = path.join(os.tmpdir(), "echo-arena-state.json");
 const MAX_BODY = 512 * 1024;
 
 let docs = {};
-let version = 1;
+let version = Date.now();
 const seen = {};      // who -> last poll time
 let waiters = [];     // pending long-polls
 
-try { const s = JSON.parse(fs.readFileSync(SAVE, "utf8")); docs = s.docs || {}; version = (s.version || 1) + 1; } catch (e) {}
+try { const s = JSON.parse(fs.readFileSync(SAVE, "utf8")); docs = s.docs || {}; } catch (e) {}
 
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
 function deepMerge(a, b) { const out = isObj(a) ? { ...a } : {}; for (const k in b) out[k] = (isObj(b[k]) && isObj(out[k])) ? deepMerge(out[k], b[k]) : b[k]; return out; }
