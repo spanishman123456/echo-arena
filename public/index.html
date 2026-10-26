@@ -1,0 +1,1881 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230A1222'/%3E%3Ccircle cx='20' cy='20' r='11' fill='none' stroke='%2338E1D2' stroke-width='2.5'/%3E%3Ccircle cx='20' cy='20' r='4' fill='%2338E1D2'/%3E%3C/svg%3E">
+<title>Echo Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Lexend:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a night-time robot arena. Sonar rings radiate from the stage; one broadcast bar on top, the stage below, the teacher's dock at the bottom. */
+:root{
+  color-scheme: dark;
+  --ink:#0A1222;        /* arena floor */
+  --ink-2:#0F1A30;      /* panels */
+  --ink-3:#16233F;      /* raised */
+  --line:#24345A;       /* hairlines */
+  --fg:#ECF2FF;         /* text */
+  --muted:#93A3C6;      /* secondary text */
+  --sonar:#38E1D2;      /* sonar ping, the one accent */
+  --signal:#FFB547;     /* judge / warning */
+  --ok:#4BE38A;
+  --bad:#FF5C7A;
+  --gold:#F6C445; --silver:#CDD6E3; --bronze:#D98B4E;
+  --f-display:"Bungee","Impact","Arial Black",sans-serif;
+  --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --r:14px;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ink);color:var(--fg);font:400 15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+.bgfx{position:fixed;inset:0;pointer-events:none;z-index:0;background:
+  radial-gradient(1200px 700px at 50% 115%, rgba(56,225,210,.10), transparent 60%),
+  repeating-radial-gradient(circle at 50% 115%, transparent 0 78px, rgba(56,225,210,.045) 79px 80px),
+  linear-gradient(rgba(36,52,90,.25) 1px, transparent 1px) 0 0/48px 48px,
+  linear-gradient(90deg, rgba(36,52,90,.25) 1px, transparent 1px) 0 0/48px 48px}
+#app{position:relative;z-index:1;min-height:100%}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.1}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--sonar);outline-offset:2px}
+.disp{font-family:var(--f-display);font-weight:400;letter-spacing:.01em}
+.mono{font-family:var(--f-mono)}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--ink-3);padding:10px 16px;border-radius:12px;font-weight:600;transition:transform .12s, background .2s, border-color .2s}
+.btn:hover{border-color:var(--sonar)}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.pri{background:var(--sonar);color:#04201D;border-color:transparent}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.warn{background:var(--signal);color:#2B1700;border-color:transparent}
+.btn.good{background:var(--ok);color:#052814;border-color:transparent}
+.btn.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:6px 10px;border-radius:9px;font-size:13px}
+.btn.lg{padding:14px 22px;font-size:17px;border-radius:14px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:600;background:var(--ink-2);white-space:nowrap}
+.chip.on{border-color:var(--sonar);color:var(--sonar)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.live{background:var(--ok);box-shadow:0 0 0 0 rgba(75,227,138,.7);animation:pulse 1.8s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(75,227,138,0)}100%{box-shadow:0 0 0 0 rgba(75,227,138,0)}}
+.panel{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r)}
+input[type=text],input[type=number],input[type=password],textarea,select{width:100%;box-sizing:border-box;background:var(--ink);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;font:inherit}
+textarea{resize:vertical;min-height:70px}
+label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+
+/* team emblem */
+.emb{--tc:var(--sonar);width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 22%, var(--ink-2));border:2px solid var(--tc);color:var(--tc);font-family:var(--f-display);font-size:20px;position:relative}
+.emb svg{width:70%;height:70%}
+.emb.big{width:72px;height:72px;border-radius:18px;font-size:34px}
+
+/* top bar */
+.bar{display:flex;align-items:center;gap:16px;padding-block:12px;border-bottom:1px solid var(--line);background:rgba(10,18,34,.8);backdrop-filter:blur(8px);position:sticky;top:env(safe-area-inset-top,0px);z-index:5;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .mark{width:34px;height:34px}
+.logo b{font-family:var(--f-display);font-size:20px;letter-spacing:.02em}
+.logo small{display:block;font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.bar .grow{flex:1}
+.timer{font-family:var(--f-display);font-size:26px;letter-spacing:.04em;padding:4px 14px;border-radius:12px;border:1px solid var(--line);background:var(--ink-2)}
+.timer.low{color:var(--signal);border-color:var(--signal)}
+.timer.out{color:var(--bad);border-color:var(--bad);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.4}}
+
+/* phase rail */
+.rail{display:flex;gap:6px;flex-wrap:wrap}
+.rail .ph{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:transparent}
+.rail .ph.done{color:var(--fg);border-color:#33507f}
+.rail .ph.cur{background:var(--sonar);color:#04201D;border-color:transparent;font-weight:700}
+
+/* landing */
+.land{max-width:1100px;margin:0 auto;padding-block:40px 60px;display:grid;gap:28px}
+.hero{display:grid;gap:14px;justify-items:start}
+.hero h1{font-family:var(--f-display);font-size:clamp(44px,8vw,96px);line-height:.95;letter-spacing:.01em}
+.hero h1 em{font-style:normal;color:var(--sonar)}
+.hero p{max-width:60ch;color:var(--muted);font-size:17px;margin:0}
+.teamgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.tcard{--tc:var(--sonar);text-align:left;display:grid;gap:12px;padding:18px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 14%,var(--ink-2)),var(--ink-2) 60%);transition:transform .15s,border-color .2s}
+.tcard:hover{transform:translateY(-3px);border-color:var(--tc)}
+.tcard h3{font-family:var(--f-display);font-size:24px;color:var(--tc)}
+
+/* screen (projector) */
+.screen{font-size:clamp(14px,1.05vw,22px)}
+.stage{padding-block:2.2em 7em;display:grid;gap:1.6em}
+.stage h2.big{font-family:var(--f-display);font-size:3.2em;line-height:1}
+.stage .lead{font-size:1.25em;color:var(--muted);max-width:60ch}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2em}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1em}
+@media (max-width:900px){.grid2,.grid4{grid-template-columns:1fr}}
+
+/* lobby */
+.lobby{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:2em;align-items:start}
+@media (max-width:900px){.lobby{grid-template-columns:1fr}}
+.lobby h1{font-family:var(--f-display);font-size:5.4em;line-height:.92}
+.lobby h1 em{font-style:normal;color:var(--sonar);display:block}
+.agenda{display:grid;gap:.5em;margin:0;padding:0;list-style:none}
+.agenda li{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:.8em;align-items:center;padding:.55em .8em;border-radius:12px;background:var(--ink-2);border:1px solid var(--line)}
+.agenda li .n{font-family:var(--f-display);color:var(--sonar)}
+.agenda li.cur{border-color:var(--sonar)}
+.joinbox{display:grid;gap:1em;justify-items:center;padding:1.4em;text-align:center}
+.qr{background:#fff;padding:10px;border-radius:14px;line-height:0}
+.qr svg{width:min(240px,60vw);height:auto}
+.joined{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6em;width:100%}
+.joined .j{display:flex;align-items:center;gap:.6em;padding:.5em .7em;border-radius:12px;border:1px solid var(--line);text-align:left}
+.joined .j.in{border-color:var(--ok)}
+
+/* sonar disc */
+.sonar{position:relative;width:min(380px,70vw);aspect-ratio:1;max-width:100%}
+.sonar i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--sonar);opacity:0;animation:ping 3.6s cubic-bezier(.2,.6,.3,1) infinite}
+.sonar i:nth-child(2){animation-delay:1.2s}.sonar i:nth-child(3){animation-delay:2.4s}
+@keyframes ping{0%{transform:scale(.15);opacity:.9}100%{transform:scale(1);opacity:0}}
+.sonar .core{position:absolute;inset:38%;border-radius:50%;background:radial-gradient(circle,var(--sonar),transparent 70%);opacity:.7}
+
+/* mission cards */
+.mcard{--tc:var(--sonar);padding:1.1em 1.2em;border-radius:18px;border:1px solid var(--line);background:linear-gradient(170deg,color-mix(in srgb,var(--tc) 12%,var(--ink-2)),var(--ink-2) 55%);display:grid;gap:.7em;align-content:start}
+.mcard .hd{display:flex;align-items:center;gap:.7em}
+.mcard h3{font-family:var(--f-display);font-size:1.35em;color:var(--tc)}
+.tierline{display:flex;gap:.5em;flex-wrap:wrap}
+.tier{font-size:.78em;font-weight:700;padding:.25em .7em;border-radius:999px;letter-spacing:.06em;text-transform:uppercase}
+.tier.silver{background:color-mix(in srgb,var(--silver) 20%,transparent);color:var(--silver);border:1px solid var(--silver)}
+.tier.gold{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid var(--gold)}
+.roles{display:flex;flex-wrap:wrap;gap:.4em}
+.role{font-size:.78em;padding:.2em .6em;border-radius:8px;background:var(--ink);border:1px solid var(--line)}
+.role b{color:var(--fg)}
+.poll{display:grid;gap:.5em}
+.poll .opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.4em;align-items:center;padding:.5em .8em;border-radius:12px;border:1px solid var(--line);position:relative;overflow:hidden}
+.poll .opt .fill{position:absolute;inset:0 auto 0 0;background:rgba(56,225,210,.12);transition:width .6s}
+.poll .opt>*{position:relative}
+.poll .opt.right{border-color:var(--ok)}
+.poll .votes{display:flex;gap:.3em}
+
+/* race lanes */
+.lanes{display:grid;gap:.8em}
+.lane{--tc:var(--sonar);display:grid;grid-template-columns:minmax(11em,1.1fr) minmax(0,3fr) minmax(8em,auto);gap:1em;align-items:center;padding:.8em 1em;border-radius:18px;border:1px solid var(--line);background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 14%,var(--ink-2)),var(--ink-2) 40%)}
+@media (max-width:900px){.lane{grid-template-columns:1fr}}
+.lane .who{display:flex;align-items:center;gap:.7em;min-width:0}
+.lane .who b{font-family:var(--f-display);font-size:1.2em;color:var(--tc);display:block}
+.track{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:.4em;align-items:center}
+.stg{display:grid;gap:.3em}
+.stg .lbl{font-size:.7em;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.25em}
+.steps span{height:.8em;border-radius:4px;background:var(--ink);border:1px solid var(--line);position:relative}
+.steps span.on{background:var(--tc);border-color:var(--tc)}
+.steps span.pend{background:var(--signal);border-color:var(--signal);animation:blink 1s steps(2) infinite}
+.stepnames{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.25em;font-size:.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lane .res{display:flex;align-items:center;gap:.6em;justify-content:flex-end}
+.lane .res .t{font-family:var(--f-display);font-size:1.3em}
+.feed{display:grid;gap:.4em;max-height:22em;overflow:auto}
+.feed .ev{display:flex;gap:.6em;align-items:center;font-size:.92em;padding:.45em .7em;border-radius:10px;background:var(--ink-2);border:1px solid var(--line)}
+.feed .ev time{color:var(--muted);font-family:var(--f-mono);font-size:.85em}
+.labgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(16em,22em);gap:1.2em;align-items:start}
+@media (max-width:1000px){.labgrid{grid-template-columns:1fr}}
+.bigclock{font-family:var(--f-display);font-size:4.2em;line-height:1;letter-spacing:.03em}
+.judgeq{display:grid;gap:.6em}
+.jcard{--tc:var(--signal);padding:.8em;border-radius:14px;border:2px solid var(--signal);background:color-mix(in srgb,var(--signal) 10%,var(--ink-2));display:grid;gap:.5em}
+.jcard .log{font-size:.88em;color:var(--fg);background:var(--ink);border-radius:10px;padding:.5em .7em;max-height:6em;overflow:auto}
+
+/* code blocks (mBlock look) */
+.prog{font:600 14px/1.2 var(--f-body);color:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:16px;background:
+  radial-gradient(circle,#2a3a5e 1px,transparent 1.5px) 0 0/18px 18px, #101a2f;border-radius:14px;border:1px solid var(--line);overflow-x:auto;min-width:0}
+.prog .ln{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.blk{--c:#4C97FF;display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:7px;background:var(--c);box-shadow:inset 0 -2px 0 rgba(0,0,0,.18);white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.blk.hat{border-radius:22px 22px 7px 7px;padding-top:11px}
+.cb{--c:#FFAB19;display:flex;flex-direction:column;align-items:flex-start}
+.cb>.h,.cb>.ln>.h{background:var(--c);padding:7px 11px;border-radius:7px 7px 7px 0;display:flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12);text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.cb>.h.mid{border-radius:0 7px 7px 0}
+.cb>.in{border-left:18px solid var(--c);padding:3px 0 3px 4px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:26px}
+.cb>.f{background:var(--c);width:70px;height:14px;border-radius:0 0 7px 7px}
+.rep{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:var(--rc,#0B9A72);border:1px solid rgba(0,0,0,.25)}
+.bool{display:inline-flex;align-items:center;gap:5px;padding:4px 18px;background:var(--bc,#0FAE80);clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%)}
+.val{background:#fff;color:#3d3d3d;border-radius:999px;padding:1px 9px;font-weight:700;text-shadow:none}
+.dd{background:rgba(0,0,0,.2);border-radius:999px;padding:1px 9px}
+.dd::after{content:" ▾";font-size:.8em}
+.note{font:italic 500 12px var(--f-body);color:var(--sonar);text-shadow:none;white-space:nowrap}
+.slot{border:2px dashed #fff;background:rgba(10,18,34,.55);color:#fff;border-radius:9px;padding:3px 10px;min-width:46px;font-weight:700;text-shadow:none;animation:wob 2.4s ease-in-out infinite;white-space:nowrap}
+.slot.filled{border-style:solid;background:#fff;color:#1b2440;animation:none}
+.slot.hinted{border-color:var(--signal);box-shadow:0 0 0 3px rgba(255,181,71,.45)}
+.slot.ok{border-color:var(--ok);background:#E9FFF2;color:#0b3b20}
+.slot[disabled]{cursor:default}
+@keyframes wob{50%{transform:translateY(-1px)}}
+.pop{position:fixed;z-index:60;background:var(--ink-3);border:1px solid var(--sonar);border-radius:14px;padding:8px;display:grid;gap:6px;box-shadow:0 18px 50px rgba(0,0,0,.5);max-width:min(92vw,360px)}
+.pop button{text-align:left;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--ink-2);font-weight:600}
+.pop button:hover{border-color:var(--sonar)}
+.pop .q{font-size:12px;color:var(--muted);padding:2px 4px}
+
+/* team view */
+.tv{max-width:1180px;margin:0 auto;padding-block:18px 60px;display:grid;gap:18px}
+.tvhead{--tc:var(--sonar);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.tvhead h1{font-family:var(--f-display);font-size:clamp(26px,4vw,40px);color:var(--tc)}
+.tvhead .grow{flex:1}
+.pts{font-family:var(--f-display);font-size:22px;padding:4px 12px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line)}
+.stepper{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:640px){.stepper{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stepper .s{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--ink-2);display:grid;gap:2px}
+.stepper .s b{font-size:13px}
+.stepper .s small{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.stepper .s.cur{border-color:var(--sonar);box-shadow:inset 0 0 0 1px var(--sonar)}
+.stepper .s.done{border-color:var(--ok)}
+.stepper .s.done small{color:var(--ok)}
+.labcols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.labcols{grid-template-columns:1fr}}
+.box{padding:16px;display:grid;gap:12px;align-content:start}
+.box h3{font-size:16px}
+.checkrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.msg{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--ink)}
+.msg.good{border-color:var(--ok);color:var(--ok)}
+.msg.warn{border-color:var(--signal);color:var(--signal)}
+.msg.bad{border-color:var(--bad);color:var(--bad)}
+.ticks{display:grid;gap:8px}
+.tick{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--ink);cursor:pointer;text-align:left}
+.tick .bx{width:20px;height:20px;border-radius:6px;border:2px solid var(--muted);flex:none;display:grid;place-items:center;font-size:13px}
+.tick.on{border-color:var(--ok)}
+.tick.on .bx{background:var(--ok);border-color:var(--ok);color:#052814}
+.minirace{display:grid;gap:6px}
+.minirace .r{--tc:var(--sonar);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.minirace .bar2{height:8px;border-radius:6px;background:var(--ink);overflow:hidden;border:1px solid var(--line)}
+.minirace .bar2 i{display:block;height:100%;background:var(--tc);transition:width .6s}
+.wait{display:grid;justify-items:center;gap:16px;text-align:center;padding-block:40px}
+.wait h2{font-family:var(--f-display);font-size:clamp(26px,4vw,44px)}
+
+/* sim */
+.sim{display:grid;gap:10px}
+.sim canvas{width:100%;max-width:100%;aspect-ratio:4/3;border-radius:14px;border:1px solid var(--line);background:#081020;display:block}
+.simbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.simlog{font:500 12px/1.5 var(--f-mono);color:var(--muted);background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:3.2em}
+.simlog b{color:var(--sonar)}
+
+/* rubric */
+.rub{display:grid;gap:12px}
+.crit{display:grid;gap:8px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--ink-2)}
+.crit .ch{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:700px){.levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lev{text-align:left;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--ink);font-size:12.5px;line-height:1.35;display:grid;gap:4px}
+.lev b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lev.on{border-color:var(--sonar);background:color-mix(in srgb,var(--sonar) 12%,var(--ink))}
+.lev.on b{color:var(--sonar)}
+.scorecard{position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px);padding:16px;display:grid;gap:10px;justify-items:center;text-align:center}
+@media (max-width:900px){.scorecard{order:-1;position:static}}
+.scorecard .n{font-family:var(--f-display);font-size:56px;line-height:1}
+.band{font-weight:700;padding:4px 12px;border-radius:999px;border:1px solid currentColor}
+.ican{display:grid;gap:6px}
+.ican .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{padding:6px 10px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--sonar);color:#04201D}
+
+/* quiz */
+.qcard{display:grid;gap:1em}
+.qtext{font-size:2em;font-weight:600;line-height:1.25;max-width:42ch}
+.qopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8em}
+@media (max-width:700px){.qopts{grid-template-columns:1fr}}
+.qo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.8em;align-items:center;text-align:left;padding:.9em 1em;border-radius:16px;border:1px solid var(--line);background:var(--ink-2);font-size:1.1em;font-weight:500}
+.qo .k{font-family:var(--f-display);width:1.8em;height:1.8em;display:grid;place-items:center;border-radius:10px;background:var(--ink);border:1px solid var(--line)}
+.qo.pick{border-color:var(--sonar)}
+.qo.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--ink-2))}
+.qo.wrong{border-color:var(--bad);opacity:.8}
+.qo.dim{opacity:.45}
+
+/* podium */
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2em;align-items:end;max-width:1100px;margin:0 auto;width:100%}
+.pod{--tc:var(--sonar);display:grid;justify-items:center;gap:.6em;text-align:center}
+.pod .plinth{width:100%;border-radius:16px 16px 0 0;display:grid;place-items:center;font-family:var(--f-display);font-size:2.4em;color:var(--ink);padding:.3em 0}
+.pod.p1 .plinth{height:4.4em;background:linear-gradient(var(--gold),#b78a1d)}
+.pod.p2 .plinth{height:3.2em;background:linear-gradient(var(--silver),#8995a6)}
+.pod.p3 .plinth{height:2.2em;background:linear-gradient(var(--bronze),#8e5226)}
+.pod b{font-family:var(--f-display);font-size:1.4em;color:var(--tc)}
+.pod.empty{opacity:.35}
+table.sb{width:100%;border-collapse:collapse;font-size:.95em}
+table.sb th,table.sb td{padding:.55em .7em;border-bottom:1px solid var(--line);text-align:left}
+table.sb th{font-size:.72em;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+table.sb td.n{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+
+/* spotlight */
+.spot{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1.4em;align-items:start}
+@media (max-width:900px){.spot{grid-template-columns:1fr}}
+.fbcard{--tc:var(--sonar);padding:.8em 1em;border-radius:14px;border:1px solid var(--line);border-left:5px solid var(--tc);background:var(--ink-2);display:grid;gap:.35em}
+.stars{color:var(--gold);letter-spacing:.1em}
+.prompts{display:grid;gap:.5em;margin:0;padding:0;list-style:none;counter-reset:p}
+.prompts li{counter-increment:p;display:grid;grid-template-columns:2em minmax(0,1fr);gap:.6em;align-items:baseline;font-size:1.15em}
+.prompts li::before{content:counter(p);font-family:var(--f-display);color:var(--sonar)}
+.starpick{display:flex;gap:4px}
+.starpick button{background:transparent;border:0;font-size:26px;line-height:1;color:var(--line);padding:2px}
+.starpick button.on{color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--ink);font-size:13px;font-weight:600}
+.chips button.on{border-color:var(--sonar);color:var(--sonar);background:color-mix(in srgb,var(--sonar) 10%,var(--ink))}
+
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(9,15,29,.96);border-top:1px solid var(--line);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.dock .in{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-block:10px}
+.dock .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-right:10px;border-right:1px solid var(--line)}
+.dock .grp:last-child{border-right:0}
+.dock .lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.showdock{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:31;opacity:.35}
+.showdock:hover{opacity:1}
+
+/* overlays */
+.ov{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(4,8,18,.82);backdrop-filter:blur(6px);padding:20px}
+.ov .card{max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:22px;display:grid;gap:14px}
+.cere{display:grid;justify-items:center;gap:14px;text-align:center;animation:rise .7s cubic-bezier(.2,1.4,.4,1)}
+.cere h2{font-family:var(--f-display);font-size:clamp(34px,6vw,76px);line-height:1}
+.cere .medal{width:min(260px,50vw);filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));animation:swing 3s ease-in-out infinite;transform-origin:50% 0}
+@keyframes rise{from{transform:scale(.6) translateY(40px);opacity:0}}
+@keyframes swing{50%{transform:rotate(4deg)}}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:90}
+.toasts{position:fixed;top:calc(80px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:70;display:grid;gap:8px;max-width:min(380px,90vw)}
+.toast{--tc:var(--sonar);padding:12px 14px;border-radius:14px;background:var(--ink-3);border:1px solid var(--tc);box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center;animation:rise .4s ease-out;font-weight:500}
+
+/* film */
+.film{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#000;width:100%;max-width:min(100%,calc((100vh - 240px) * 16 / 9));margin:0 auto}
+.film canvas{display:block;width:100%;aspect-ratio:16/9;max-width:100%}
+.film iframe{display:block;width:100%;aspect-ratio:16/9;max-width:100%;border:0}
+.film .ctl{position:absolute;inset:auto 0 0 0;display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.film .prog2{flex:1;height:5px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.film .prog2 i{display:block;height:100%;width:0;background:var(--sonar)}
+.film .start{position:absolute;inset:0;display:grid;place-items:end center;padding-bottom:12%;background:radial-gradient(circle at 50% 50%,rgba(56,225,210,.18),rgba(0,0,0,.6));}
+.banner{padding:8px 14px;border-radius:12px;border:1px solid var(--signal);color:var(--signal);background:color-mix(in srgb,var(--signal) 8%,var(--ink));font-size:13px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="bgfx" aria-hidden="true"></div>
+<div id="app"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<canvas id="confetti" hidden></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+   ECHO ARENA — live mBot2 sensor challenge for 4 teams
+   Views: landing · team-1..4 · screen (projector) · control (projector + teacher dock)
+   ===================================================================== */
+
+const JOIN_URL_DEFAULT = /^https?:$/.test(location.protocol) ? location.origin + "/" : "";
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o ?? {}));
+const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+function deepMerge(a, b){ const out = isObj(a) ? {...a} : {}; for (const k in b){ out[k] = (isObj(b[k]) && isObj(out[k])) ? deepMerge(out[k], b[k]) : b[k]; } return out; }
+const lsGet = (k, d=null) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+const fmt = ms => { ms = Math.max(0, Math.round(ms/1000)); const m = Math.floor(ms/60), s = ms%60; return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); };
+const clock = ts => { const d = new Date(ts); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+
+/* ---------------- Lesson content ---------------- */
+const TEAM_IDS = ["t1","t2","t3","t4"];
+const DEFAULT_CONFIG = {
+  teams: {
+    t1:{name:"Bats",     color:"#A98BFF", challenge:"maze", track:"sg"},
+    t2:{name:"Dolphins", color:"#3DB8F5", challenge:"sumo", track:"sg"},
+    t3:{name:"Orcas",    color:"#FF6FB1", challenge:"maze", track:"sg"},
+    t4:{name:"Swifts",   color:"#B4E34A", challenge:"sumo", track:"sg"}
+  },
+  labMin: 20, pin: "2026", joinUrl: "", className: "Grade 6A"
+};
+const TRACKS = { sg:["silver","gold"], s:["silver"], g:["gold"] };
+const TRACK_NAMES = { sg:"Silver → Gold", s:"Silver only", g:"Gold only" };
+
+const PHASES = [
+  {id:"lobby",  name:"Lobby",            min:0},
+  {id:"intro",  name:"Ignite",           min:3},
+  {id:"brief",  name:"Mission brief",    min:4},
+  {id:"lab",    name:"Code lab",         min:20},
+  {id:"check",  name:"Self-check",       min:3},
+  {id:"share",  name:"Share & feedback", min:8},
+  {id:"quiz",   name:"Brain check",      min:4},
+  {id:"podium", name:"Podium",           min:3}
+];
+const phaseIdx = id => PHASES.findIndex(p => p.id === id);
+
+const ROLES = [
+  {id:"coder",    name:"Lead coder",     job:"Builds the script in mBlock"},
+  {id:"engineer", name:"Robot engineer", job:"Sensors, wires, battery, robot on the course"},
+  {id:"tester",   name:"Tester",         job:"Runs tests, reads the sensor numbers"},
+  {id:"reporter", name:"Reporter",       job:"Writes the log, presents to the class"},
+  {id:"keeper",   name:"Timekeeper",     job:"Watches the clock, calls the judge"}
+];
+const ARENA_CODE = [
+  "Everyone talks before anyone clicks.",
+  "Test, then tweak: change one number at a time.",
+  "Robots stay on the table until you test.",
+  "Celebrate every team. Respect the judge's call."
+];
+
+const ICONS = {
+  maze:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3h18v18H3zM7 3v10h6M11 7h6v10M7 17h4"/></svg>`,
+  sumo:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><rect x="6.5" y="9.5" width="5" height="5" rx="1"/><path d="M13 12h5M16 10l2 2-2 2"/></svg>`,
+  ping:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="2"/><path d="M10 7a7 7 0 0 1 0 10M14 4a11 11 0 0 1 0 16M18 2a14 14 0 0 1 0 20"/></svg>`
+};
+
+const CH = {
+  maze: {
+    name:"Maze Solver", arena:"Arena 1 · The Maze", icon:ICONS.maze,
+    sensors:"Front ultrasonic sensor · Quad RGB for the exit zone (Gold)",
+    mission:"Escape a maze by sensing the walls, not by memorising turns.",
+    mystery:"How can a robot escape a maze it has never seen before?",
+    real:["Warehouse robots routing between shelves","Robot vacuums mapping a room","Video-game characters finding a path"],
+    stages:{
+      silver:{title:"Look before you leap", goal:"Senses walls and chooses turns instead of replaying a route",
+        criteria:["Checks the front distance before every move","Turns right when blocked, turns around if still blocked","Drives the practice maze without crashing"]},
+      gold:{title:"The right-hand rule", goal:"Solves an unseen maze with the right-hand rule",
+        criteria:["Tries right first, then straight, then left","Solves the rearranged maze it has never seen","Stops and plays level-up on the dark exit zone"]}
+    },
+    tune:[
+      ["Scrapes walls on turns","Turn from the corridor centre and slow to 30 RPM"],
+      ["Oscillates left-right forever","The opening number (35) must be bigger than the blocked number (20)"],
+      ["Reads openings through thin walls","Walls must be at least 15 cm tall"],
+      ["Drives over the exit without stopping","Make the exit zone at least 30 cm deep and learn it on this floor"],
+      ["Circles one island forever","Known limit: the rule solves wall-connected mazes. Discuss it!"]
+    ],
+    warm:{q:"Which robot can solve a maze it has NEVER seen?",
+      opts:["The one with the longest list of memorised turns","The fastest one","The one that was tested on a different maze","The one that senses walls and follows a rule"], ans:3},
+    prompts:["How did you program the robot? Walk us through the blocks.","Which sensor did the work, and which number did you tune?","What was your hardest bug, and how did you fix it?","Why does a rule beat a memorised route in a new maze?"],
+    exit:["Your robot solves the practice maze but fails a new one. What does that tell you about your code?","Name one real situation where following a wall would help you find an exit."]
+  },
+  sumo: {
+    name:"Sumo Push", arena:"Arena 2 · The Ring", icon:ICONS.sumo,
+    sensors:"Quad RGB sensor (ring edge) · Ultrasonic sensor (opponent)",
+    mission:"Stay inside the ring, find the opponent, and push it out with full power.",
+    mystery:"Why does a winning sumo robot check the edge BEFORE it attacks?",
+    real:["Robot sumo tournaments in schools and clubs","Warehouse robots that must stay inside their lanes","Robot vacuums that turn back at a virtual wall"],
+    stages:{
+      silver:{title:"Seek & push", goal:"Seeks the opponent and commits to full-power pushes",
+        criteria:["Waits 3 s after button A: the fair-start rule","Edge first: backs up and turns at the white line","Scans slowly, pushes at 100 RPM under 30 cm"]},
+      gold:{title:"Mind games", goal:"Adds a random opening gambit, spin-search and LED taunt",
+        criteria:["Random opening arc, left or right","Red LED when attacking, orange when searching","Short search bursts and never leaves the ring"]}
+    },
+    tune:[
+      ["Falls out while pushing","The boundary check is below the push. Reorder: boundary first"],
+      ["Never finds the opponent","The scan is too fast for the sensor. Slow the spin to 30 RPM"],
+      ["Loses every push duel","Battery sag kills torque. Full charge before each round"],
+      ["Drives straight out at the start","Learn the ring (double-press), sensor dropdown = 1"],
+      ["Detects the judge's shoes","Cap opponent detection at 30 cm"]
+    ],
+    warm:{q:"Your robot sees the boundary AND the opponent. It should…",
+      opts:["Escape the boundary first","Push the opponent first","Stop and wait","Spin on the spot"], ans:0},
+    prompts:["How did you program the robot? Walk us through the priority ladder.","Which sensor watches the edge, and which one finds the opponent?","What was your hardest bug, and how did you fix it?","Why must the boundary check come first?"],
+    exit:["Your robot drives itself off the ring edge. What sensor logic is missing or wrong?","Name one real sport or competition where sensing your opponent's position matters."]
+  }
+};
+
+/* ---- code puzzles: mBlock-style programs with blanks ---- */
+const C = {event:"#E6A100", control:"#F29B12", motion:"#4C97FF", sensor:"#0FAE80", sensorR:"#0B8F69", light:"#8A5CF5", sound:"#C252C2", op:"#4FB04F"};
+const US = (port="2") => ({r:["ultrasonic 2",{d:port},"distance to an object (cm)"], c:"sensorR"});
+const PUZZLES = {
+  maze: {
+    silver:{
+      slots:{
+        a:{opts:["ultrasonic 2 distance (cm)","quad rgb detects line?","timer"], ans:0, hint:"Which sensor can measure how far away the wall is?"},
+        b:{opts:[">","<","="], ans:0, hint:"The path is CLEAR when the wall is FAR away. Far means a BIG number."},
+        c:{opts:["2","20","200"], ans:1, hint:"Corridors are about 40 cm wide. 2 cm is touching the wall; 200 cm is across the room."},
+        d:{opts:["moves forward 20 cm","turns right 90°","stop all motors"], ans:0, hint:"The path ahead is clear. What should the robot do?"},
+        e:{opts:["right","left"], ans:0, hint:"Silver always tries RIGHT first when it is blocked."},
+        f:{opts:["90","180","360"], ans:1, hint:"You are facing right and still blocked. To face LEFT you need half a circle."}
+      },
+      prog:[
+        {k:"hat", c:"event", p:["when button",{d:"A"},"pressed"]},
+        {k:"forever", body:[
+          {k:"if", p:["if",{b:[{s:"a"},{s:"b"},{s:"c"}]},"then"], note:"path clear?", body:[
+            {k:"cmd", c:"motion", p:[{s:"d"}]}
+          ], els:[
+            {k:"cmd", c:"motion", p:["turns",{s:"e"},{v:"90"},"° until done"]},
+            {k:"if", p:["if",{b:[US(),"<",{v:"20"}]},"then"], note:"still blocked?", body:[
+              {k:"cmd", c:"motion", p:["turns",{d:"left"},{s:"f"},"° until done"]}
+            ]}
+          ]}
+        ]}
+      ]
+    },
+    gold:{
+      slots:{
+        a:{opts:["right","left"], ans:0, hint:"Right-hand rule: keep your right hand on the wall, so always peek RIGHT first."},
+        b:{opts:["10","35","350"], ans:1, hint:"An opening means a far reading. Openings read more than 35 cm; a wall right beside you reads about 12 cm."},
+        c:{opts:["moves forward 25 cm","turns right 90°","stop motor all"], ans:0, hint:"Straight ahead is open. Take it!"},
+        d:{opts:["left","right"], ans:0, hint:"Right is blocked, straight is blocked. Which way is left?"},
+        e:{opts:["quad rgb L1 or R1 detects line?","ultrasonic 2 distance > 35","button A pressed?"], ans:0, hint:"The exit is a dark zone on the FLOOR. Which sensor looks down at the floor?"},
+        f:{opts:["stop motor all","moves forward 25 cm","turns right 90°"], ans:0, hint:"You found the exit. What should a winner do?"}
+      },
+      prog:[
+        {k:"hat", c:"event", p:["when button",{d:"A"},"pressed"]},
+        {k:"forever", body:[
+          {k:"cmd", c:"motion", p:["turns",{s:"a"},{v:"90"},"° until done"], note:"peek"},
+          {k:"if", p:["if",{b:[US(),">",{s:"b"}]},"then"], note:"opening?", body:[
+            {k:"cmd", c:"motion", p:["moves",{d:"forward"},{v:"25"},{d:"cm"},"until done"]}
+          ], els:[
+            {k:"cmd", c:"motion", p:["turns",{d:"left"},{v:"90"},"° until done"], note:"face original heading"},
+            {k:"if", p:["if",{b:[US(),">",{v:"20"}]},"then"], body:[
+              {k:"cmd", c:"motion", p:[{s:"c"}]}
+            ], els:[
+              {k:"cmd", c:"motion", p:["turns",{s:"d"},{v:"90"},"° until done"], note:"dead end side"}
+            ]}
+          ]},
+          {k:"if", p:["if",{b:[{s:"e"}]},"then"], note:"exit zone", body:[
+            {k:"cmd", c:"motion", p:[{s:"f"}]},
+            {k:"cmd", c:"sound", p:["play",{d:"level-up"},"until done"]},
+            {k:"cmd", c:"control", p:["stop",{d:"this script"}]}
+          ]}
+        ]}
+      ]
+    }
+  },
+  sumo: {
+    silver:{
+      slots:{
+        a:{opts:["0","3","30"], ans:1, hint:"Real sumo has a hands-off start. How many seconds does the rule give?"},
+        b:{opts:["BOUNDARY: L2 or R2 detects background color?","OPPONENT: ultrasonic distance < 30","button A pressed?"], ans:0, hint:"Safety outranks attack. What must be checked FIRST in every loop?"},
+        c:{opts:["backward","forward"], ans:0, hint:"You are standing on the white edge. Which way gets you back into the ring?"},
+        d:{opts:["3","30","300"], ans:1, hint:"The ring is 120 cm wide. Cap the opponent detection at a sensible distance."},
+        e:{opts:["30","60","100"], ans:2, hint:"Commit! A hesitant push loses. Use full power."},
+        f:{opts:["30","100"], ans:0, hint:"A fast spin is too quick for the sensor to read. Scan slowly."}
+      },
+      prog:[
+        {k:"hat", c:"event", p:["when button",{d:"A"},"pressed"]},
+        {k:"cmd", c:"control", p:["wait",{s:"a"},"seconds"], note:"fair start"},
+        {k:"forever", body:[
+          {k:"if", p:["if",{b:[{s:"b"}]},"then"], note:"priority 1", body:[
+            {k:"cmd", c:"motion", p:["moves",{s:"c"},"at",{v:"40"},"RPM for",{v:"0.5"},"secs"]},
+            {k:"cmd", c:"motion", p:["turns",{d:"right"},{v:"135"},"° until done"]}
+          ], els:[
+            {k:"if", p:["if",{b:[US("1"),"<",{s:"d"}]},"then"], note:"priority 2", body:[
+              {k:"cmd", c:"motion", p:["moves",{d:"forward"},"at",{s:"e"},"RPM"], note:"PUSH!"}
+            ], els:[
+              {k:"cmd", c:"motion", p:["turns",{d:"right"},"at",{s:"f"},"RPM"], note:"scan"}
+            ]}
+          ]}
+        ]}
+      ]
+    },
+    gold:{
+      slots:{
+        a:{opts:["1","2","10"], ans:1, hint:"Two openings, arc left or arc right. Like a coin flip."},
+        b:{opts:["BOUNDARY: L2 or R2 detects background color?","OPPONENT: ultrasonic distance < 30","LED is red?"], ans:0, hint:"Even with mind games, one check always stays on top of the loop."},
+        c:{opts:["<",">"], ans:0, hint:"The opponent is CLOSE when the distance is SMALL."},
+        d:{opts:["red","orange","off"], ans:0, hint:"The taunt: red means ATTACK, orange means searching."},
+        e:{opts:["30","100"], ans:1, hint:"Full-power push, every time."},
+        f:{opts:["0.2","2","20"], ans:0, hint:"Search in SHORT bursts, then check the sensors again."}
+      },
+      prog:[
+        {k:"hat", c:"event", p:["when button",{d:"A"},"pressed"]},
+        {k:"cmd", c:"control", p:["wait",{v:"3"},"seconds"]},
+        {k:"if", p:["if",{b:[{r:["pick random",{v:"1"},"to",{s:"a"}], c:"op"},"=",{v:"1"}], bc:C.op},"then"], note:"opening gambit", body:[
+          {k:"cmd", c:"motion", p:["encoder motor EM1 rotates at",{v:"30"},"RPM, EM2 at",{v:"-80"},"RPM"], note:"arc left"}
+        ], els:[
+          {k:"cmd", c:"motion", p:["encoder motor EM1 rotates at",{v:"80"},"RPM, EM2 at",{v:"-30"},"RPM"], note:"arc right"}
+        ]},
+        {k:"cmd", c:"control", p:["wait",{v:"1"},"seconds"]},
+        {k:"forever", body:[
+          {k:"if", p:["if",{b:[{s:"b"}]},"then"], note:"priority 1", body:[
+            {k:"cmd", c:"motion", p:["moves",{d:"backward"},"at",{v:"40"},"RPM for",{v:"0.5"},"secs"]},
+            {k:"cmd", c:"motion", p:["turns",{d:"right"},{v:"135"},"° until done"]}
+          ], els:[
+            {k:"if", p:["if",{b:[US("1"),{s:"c"},{v:"30"}]},"then"], note:"priority 2", body:[
+              {k:"cmd", c:"light", p:["LED",{d:"all"},"displays",{s:"d"}]},
+              {k:"cmd", c:"motion", p:["moves",{d:"forward"},"at",{s:"e"},"RPM"]}
+            ], els:[
+              {k:"cmd", c:"light", p:["LED",{d:"all"},"displays",{v:"orange"}]},
+              {k:"cmd", c:"motion", p:["turns",{d:"right"},"at",{v:"40"},"RPM"]},
+              {k:"cmd", c:"control", p:["wait",{s:"f"},"seconds"], note:"short burst"}
+            ]}
+          ]}
+        ]}
+      ]
+    }
+  }
+};
+
+/* ---- rubric (Assessment Pack, Track 2.1, projects 10 & 14) ---- */
+const RUBRIC = {
+  common:[
+    {id:"orig", name:"Project idea originality", max:1, lv:["Copies the example directly","Adapts the class example slightly","Makes own choices beyond the example","Designs an original variation and justifies it"]},
+    {id:"comm", name:"Communication & presentation", max:1, lv:["Minimal explanation of the work","Presents with prompting",null,"Explains design and tuning decisions confidently with evidence"]},
+    {id:"indep", name:"Independence", max:1, lv:["Relies on step-by-step help","Needs frequent guidance","Works independently with minimal check-ins","Builds, codes and tunes fully independently"]}
+  ],
+  maze:[
+    {id:"under", name:"Understanding of concepts", max:1, lv:["Cannot yet explain the concept","Explains with prompting","Explains how the robot senses a wall and chooses a turn","Explains the right-hand rule AND why it solves any simply-connected maze"]},
+    {id:"code", name:"Build / code quality", max:1, lv:["Script incomplete","Script somewhat disorganized","Script organized; front ultrasonic level and square for wall detection","Script is tidy, commented and efficient; front ultrasonic level and square for wall detection perfectly"]},
+    {id:"eng", name:"Engineering process", max:2, lv:["No testing or iteration evident","Tests once; improves only with help","Tests, identifies one problem, documents one improvement","Systematic testing across BOTH the practice maze and an unseen maze with recorded data and reasons"]},
+    {id:"poster", name:"Poster", max:1, lv:["No maze map card yet","Maze map card started but incomplete","Maze map card shows the maze sketch and turn rule used","Maze map card: maze sketch, turn rule used, AND attempts to solve"]},
+    {id:"func", name:"Functionality of the project", max:2, lv:["Not yet escaping the maze","Escapes only with help or by replaying a fixed route","A robot escaping a physical maze (the Expected Output)","Escapes a physical maze AND solves an unseen maze using the right-hand rule and stops on the Quad RGB exit line"]}
+  ],
+  sumo:[
+    {id:"under", name:"Understanding of concepts", max:1, lv:["Cannot yet explain the concept","Explains with prompting","Explains how the robot senses the opponent or the ring edge","Explains the sense-decide-commit strategy AND how it adapts if the first push fails"]},
+    {id:"code", name:"Build / code quality", max:1, lv:["Script incomplete","Script somewhat disorganized","Script organized; sensor aimed forward/down for edge and opponent detection","Script is tidy, commented and efficient; sensor aimed forward/down for edge and opponent detection perfectly"]},
+    {id:"eng", name:"Engineering process", max:2, lv:["No testing or iteration evident","Tests once; improves only with help","Tests, identifies one problem, documents one improvement","Systematic testing across BOTH a practice push and a full match with recorded data and reasons"]},
+    {id:"poster", name:"Poster", max:1, lv:["No match log card yet","Match log card started but incomplete","Match log card shows the strategy sketch and match result","Match log card: strategy sketch, win/loss record, AND one strategy change"]},
+    {id:"func", name:"Functionality of the project", max:2, lv:["Not yet ready for a match","Pushes sometimes but drives off the ring or misses the opponent","A tournament-ready sumo program and match results (the Expected Output)","Tournament-ready sumo program and match results AND adds a random opening gambit, spin-search and LED taunt"]}
+  ],
+  ican:{
+    maze:["Decompose the maze into a list of move/turn steps on my route plan","Play back my planned route to reach the exit","Make the robot check the front distance before it moves (sense, then act)","Code the right-hand rule and try a maze I haven't seen","Explain why a rule works on a new maze but a fixed route doesn't"],
+    sumo:["Explain the priority ladder: boundary first, opponent second, search last","Stay inside the ring on my own using the boundary check","Find the opponent and commit to a full-power push","Add a random opening arc or a spin-search","Explain one strategy change I made between matches"]
+  }
+};
+RUBRIC.common[1].lv[2] = "Presents the work and explains the program clearly";
+const rubricFor = ch => { const r = RUBRIC[ch]; return [r[0], RUBRIC.common[0], r[1], r[2], RUBRIC.common[1], r[3], RUBRIC.common[2], r[4]]; };
+const LEVEL_FACTOR = [0.25, 0.5, 0.75, 1];
+const LEVEL_NAMES = ["1 · Beginning","2 · Approaching","3 · Meeting","4 · Exceeding"];
+function rubricScore(ch, levels){
+  let s = 0, n = 0; const crit = rubricFor(ch);
+  crit.forEach(c => { const l = levels?.[c.id]; if (l){ s += c.max * LEVEL_FACTOR[l-1]; n++; } });
+  return {score: Math.round(s*100)/100, done: n, total: crit.length};
+}
+const bandOf = s => s >= 9 ? ["Exceeding","var(--gold)"] : s >= 7 ? ["Meeting","var(--ok)"] : s >= 5 ? ["Approaching","var(--signal)"] : ["Beginning","var(--bad)"];
+
+/* ---- brain check ---- */
+const QUIZ = [
+  {q:"How does the ultrasonic sensor measure distance?", o:["It takes a photo of the object","It sends a sound and times the echo","It measures how hot the object is","It touches the object"], a:1,
+   why:"It sends a sound too high for our ears and times the echo. A longer wait means a farther object, just like a bat."},
+  {q:"The maze robot reads 12 cm in front. The code says: if distance > 20 → move forward, else → turn right. What happens?", o:["It moves forward","It stops forever","It turns right","It plays a sound"], a:2,
+   why:"12 is not greater than 20, so the condition is false and the robot runs the else branch: it turns right."},
+  {q:"Which sensor tells a sumo robot it has reached the white edge of the ring?", o:["The Quad RGB sensor","The ultrasonic sensor","Button A","The speaker"], a:0,
+   why:"The Quad RGB sensor looks down and sees the colour change at the white line. The ultrasonic sensor looks ahead for the opponent."},
+  {q:"Why must the boundary check come FIRST inside the sumo loop?", o:["It makes the robot faster","The ultrasonic sensor only works second","It saves battery","Safety beats attack: a push is pointless if you drive out"], a:3,
+   why:"The loop checks conditions top to bottom. If the push came first, the robot could chase the opponent straight out of the ring."},
+  {q:"Why can a sensing robot escape a NEW maze, while a memorised route fails?", o:["The memorised route is too slow","It has a bigger battery","It decides each move from what it senses right now","It drives faster"], a:2,
+   why:"A memorised route only fits one exact maze. A sensing rule reacts to whatever walls are really there."}
+];
+
+const PTS = {warm:5, silver:30, gold:40, medal:[50,35,25,15], hint:-5, quiz:10, feedback:5, check:10};
+const GLOW = ["Clear explanation","Smart sensor use","Great debugging story","Everyone spoke","Brave tuning"];
+const GROW = ["Show the code more slowly","Explain the numbers you changed","Say more about the sensor","Share what you'd improve","Let more members speak"];
+const RETURN_REASONS = ["Hit a wall","Left the ring","Didn't stop at the exit","No full-power push","Code doesn't match the robot"];
+
+/* ---------------- Sound ---------------- */
+const Snd = (() => {
+  let ctx = null, on = lsGet("echoArena.sound", true);
+  const ac = () => { if (!ctx){ try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } if (ctx && ctx.state === "suspended") ctx.resume(); return ctx; };
+  function tone(f, d=.15, type="sine", vol=.15, when=0, slide=0){
+    const c = ac(); if (!c || !on) return; const t = c.currentTime + when;
+    const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .05);
+  }
+  return {
+    get on(){ return on; }, set on(v){ on = v; lsSet("echoArena.sound", v); },
+    ctx: ac, tone,
+    ping(){ tone(1850,.35,"sine",.12,0,900); tone(1850,.25,"sine",.04,.18,1000); },
+    click(){ tone(600,.05,"square",.04); },
+    good(){ [523,659,784,1046].forEach((f,i)=>tone(f,.18,"triangle",.14,i*.08)); },
+    bad(){ tone(220,.18,"sawtooth",.08); tone(180,.25,"sawtooth",.07,.12); },
+    judge(){ tone(880,.12,"square",.07); tone(880,.12,"square",.07,.2); },
+    fanfare(){ [[523,0],[659,.12],[784,.24],[1046,.36],[784,.6],[1046,.72]].forEach(([f,w])=>{tone(f,.35,"sawtooth",.07,w);tone(f/2,.35,"triangle",.08,w);}); },
+    tick(){ tone(1200,.04,"square",.05); }
+  };
+})();
+document.addEventListener("pointerdown", () => Snd.ctx(), {once:true});
+
+/* ---------------- Store: live server sync (no sign-in), local fallback ---------------- */
+const Store = (() => {
+  const docs = {};
+  let mode = "local", listeners = [], online = {}, v = 0, live = false, queue = [], flushing = false;
+  const LS = "echoArena.local.v1";
+  let bc = null;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const notify = () => listeners.forEach(fn => fn());
+  const who = () => App.view === "team" ? App.teamId : App.view === "control" ? "control" : "screen";
+  function loadLocal(){ const m = lsGet(LS, {}); Object.keys(docs).forEach(k => delete docs[k]); Object.assign(docs, m); }
+  function saveLocal(){ lsSet(LS, docs); try { bc && bc.postMessage("sync"); } catch(e){} }
+  function applyOp(o){ if (o.op === "set") docs[o.path] = clone(o.data); else if (o.op === "update") docs[o.path] = deepMerge(docs[o.path] || {}, o.data); else if (o.op === "del") delete docs[o.path]; }
+  function applyServer(d){
+    const onl = JSON.stringify(d.online || {}), changed = d.v !== v || onl !== JSON.stringify(online);
+    online = d.online || {};
+    if (d.v !== v){ v = d.v; Object.keys(docs).forEach(k => delete docs[k]); Object.assign(docs, d.docs || {}); queue.forEach(applyOp); if (App.view === "control") lsSet("echoArena.cache", docs); }
+    if (changed) notify();
+  }
+  function setLive(x){ if (x !== live){ live = x; notify(); } }
+  async function poll(){
+    while (true){
+      try { const r = await fetch(`/api/sync?since=${v}&who=${encodeURIComponent(who())}`, {cache:"no-store"}); if (!r.ok) throw new Error(r.status); applyServer(await r.json()); setLive(true); }
+      catch(e){ setLive(false); await sleep(2000); }
+    }
+  }
+  async function flush(){
+    if (flushing || mode !== "server") return; flushing = true;
+    while (queue.length){
+      const batch = queue.slice(0, 50);
+      try { const r = await fetch("/api/write", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ops:batch})}); if (!r.ok) throw new Error(r.status); queue.splice(0, batch.length); setLive(true); }
+      catch(e){ setLive(false); await sleep(1500); }
+    }
+    flushing = false;
+  }
+  function write(op){
+    applyOp(op);
+    if (mode === "local"){ saveLocal(); notify(); return Promise.resolve(); }
+    queue.push(op); notify(); return flush();
+  }
+  async function init(){
+    loadLocal();
+    try { bc = new BroadcastChannel("echo-arena"); bc.onmessage = () => { if (mode === "local"){ loadLocal(); notify(); } }; } catch(e){}
+    if (!/^https?:$/.test(location.protocol)) return mode;
+    try {
+      const r = await fetch(`/api/sync?since=0&who=${encodeURIComponent(who())}`, {cache:"no-store"});
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json(); mode = "server"; Object.keys(docs).forEach(k => delete docs[k]); applyServer(d); live = true; poll();
+    } catch(e){ mode = "local"; }
+    return mode;
+  }
+  return { init,
+    set:(path, data) => write({op:"set", path, data:clone(data)}),
+    update:(path, data) => write({op:"update", path, data:clone(data)}),
+    del:path => write({op:"del", path}),
+    presence(){}, get:p => docs[p], all:() => docs, on:fn => listeners.push(fn),
+    get mode(){ return mode; }, get live(){ return live; }, canWrite:true, get online(){ return online; } };
+})();
+
+/* ---------------- Derived state ---------------- */
+const st = () => Store.get("arena/state") || null;
+const cfg = () => deepMerge(DEFAULT_CONFIG, Store.get("arena/config") || {});
+const team = id => { const s = st(); const d = Store.get("teams/" + id); return (d && s && d.session === s.session) ? d : {}; };
+const tcfg = id => cfg().teams[id];
+const stagesOf = id => TRACKS[tcfg(id).track] || TRACKS.sg;
+function elapsedMs(timer, now=Date.now()){ if (!timer) return 0; return (timer.acc || 0) + (timer.running ? Math.max(0, now - timer.startedAt) : 0); }
+function remainingMs(){ const s = st(); if (!s || !s.timer) return cfg().labMin*60000; return (s.timer.dur || cfg().labMin*60000) - elapsedMs(s.timer); }
+const labStarted = () => { const s = st(); return !!(s && s.timer && (s.timer.running || s.timer.acc > 0)); };
+const timeUp = () => labStarted() && remainingMs() <= 0;
+
+function stageStatus(id, stage){
+  const t = team(id), sd = (t.stages || {})[stage] || {};
+  if (t.verified && t.verified[stage]) return "verified";
+  if (t.judge && t.judge.stage === stage) return "judge";
+  if (sd.solvedAt) return "solved";
+  return "coding";
+}
+function currentStage(id){ return stagesOf(id).find(s => stageStatus(id, s) !== "verified") || null; }
+function stagesDone(id){ return stagesOf(id).filter(s => stageStatus(id, s) === "verified").length; }
+function race(){
+  const s = st(); const final = s && phaseIdx(s.phase) > phaseIdx("lab");
+  const rows = TEAM_IDS.map(id => {
+    const t = team(id), stg = stagesOf(id), done = stagesDone(id);
+    const last = done ? Math.max(...stg.filter(x => t.verified && t.verified[x]).map(x => t.verified[x].ms || 0)) : Infinity;
+    return {id, done, total: stg.length, finished: done === stg.length, ms: last};
+  });
+  rows.sort((a,b) => (b.finished - a.finished) || (b.done - a.done) || (a.ms - b.ms));
+  let pos = 0;
+  rows.forEach(r => { r.medal = null; if (r.finished || (final && r.done > 0)) { r.medal = ["gold","silver","bronze","finisher"][Math.min(pos,3)]; r.place = pos + 1; pos++; } });
+  return rows;
+}
+function points(id){
+  const t = team(id), c = tcfg(id), s = st() || {}; const b = {};
+  if (t.warm && t.warm.c === CH[c.challenge].warm.ans) b.warm = PTS.warm;
+  stagesOf(id).forEach(x => { if (t.verified && t.verified[x]) b[x] = PTS[x]; });
+  const r = race().find(r => r.id === id); if (r && r.medal) b.medal = PTS.medal[["gold","silver","bronze","finisher"].indexOf(r.medal)];
+  const hints = Object.values(t.stages || {}).reduce((n, sd) => n + ((sd.hints || []).length), 0); if (hints) b.hints = hints * PTS.hint;
+  const qz = s.quiz || {i:-1}; let qp = 0;
+  QUIZ.forEach((q, i) => { const a = (t.quiz || {})[i]; const shown = i < qz.i || (i === qz.i && qz.reveal); if (a && shown && a.c === q.a) qp += PTS.quiz; });
+  if (qp) b.quiz = qp;
+  const fb = feedbacks().filter(f => f.from === id).length; if (fb) b.feedback = fb * PTS.feedback;
+  if (t.rubric && t.rubric.at) b.check = PTS.check;
+  if (t.bonus) b.bonus = t.bonus;
+  return {total: Math.max(0, Object.values(b).reduce((a, v) => a + v, 0)), b};
+}
+function feedbacks(){ const s = st(); const all = Store.all(); return Object.keys(all).filter(k => k.startsWith("feedback/")).map(k => all[k]).filter(f => s && f.session === s.session); }
+
+/* ---------------- Visual helpers ---------------- */
+function emb(id, big=false, px=0){ const c = tcfg(id); return `<span class="emb${big?" big":""}" style="--tc:${c.color}${px?`;width:${px}px;height:${px}px;font-size:${Math.round(px/2)}px;border-radius:${Math.round(px/3.5)}px`:""}">${esc(c.name[0])}</span>`; }
+function medalSVG(kind, size=120, label=""){
+  const pal = {gold:["#FFF2B0","#F6C445","#A97A0E","#7A5408"], silver:["#FFFFFF","#CDD6E3","#8592A6","#5A6577"], bronze:["#FFD3AE","#D98B4E","#8E5226","#5E3415"], finisher:["#C9FFF8","#38E1D2","#147A72","#0B4A45"]}[kind] || [];
+  const id = "m" + Math.random().toString(36).slice(2,8);
+  const num = {gold:"1",silver:"2",bronze:"3",finisher:"★"}[kind];
+  return `<svg class="medal" width="${size}" viewBox="0 0 200 260" role="img" aria-label="${kind} medal">
+  <defs><radialGradient id="${id}g" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="${pal[0]}"/><stop offset=".45" stop-color="${pal[1]}"/><stop offset="1" stop-color="${pal[2]}"/></radialGradient>
+  <linearGradient id="${id}r" x1="0" x2="1"><stop offset="0" stop-color="#1F3D7A"/><stop offset=".5" stop-color="#2F64C8"/><stop offset="1" stop-color="#1F3D7A"/></linearGradient></defs>
+  <path d="M58 0h34l26 92H84z" fill="url(#${id}r)"/><path d="M142 0h-34l-26 92h34z" fill="#38E1D2" opacity=".9"/>
+  <circle cx="100" cy="170" r="78" fill="${pal[3]}"/><circle cx="100" cy="166" r="76" fill="url(#${id}g)"/>
+  <circle cx="100" cy="166" r="58" fill="none" stroke="${pal[3]}" stroke-opacity=".45" stroke-width="3"/>
+  <circle cx="100" cy="166" r="66" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="3 5"/>
+  <text x="100" y="186" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="56" fill="${pal[3]}" opacity=".85">${num}</text>
+  <path d="M60 128a58 58 0 0 1 50-20" stroke="#fff" stroke-opacity=".55" stroke-width="5" fill="none" stroke-linecap="round"/>
+  ${label?`<text x="100" y="250" text-anchor="middle" font-family="Lexend, sans-serif" font-size="14" fill="#fff">${esc(label)}</text>`:""}</svg>`;
+}
+const logoMark = `<svg class="mark" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="var(--sonar)" stroke-width="2" opacity=".35"/><circle cx="20" cy="20" r="11" stroke="var(--sonar)" stroke-width="2" opacity=".7"/><circle cx="20" cy="20" r="4" fill="var(--sonar)"/><path d="M20 20L34 8" stroke="var(--sonar)" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+
+function toast(html, color="var(--sonar)"){
+  const el = document.createElement("div"); el.className = "toast"; el.style.setProperty("--tc", color); el.innerHTML = html;
+  $("#toasts").appendChild(el); setTimeout(() => el.remove(), 5200);
+}
+
+/* confetti */
+function confetti(ms=3500){
+  const cv = $("#confetti"); cv.hidden = false; const c = cv.getContext("2d");
+  const W = cv.width = innerWidth, H = cv.height = innerHeight;
+  const cols = ["#F6C445","#38E1D2","#FF6FB1","#A98BFF","#B4E34A","#FFFFFF"];
+  const P = Array.from({length:180}, () => ({x:W/2 + (Math.random()-.5)*W*.3, y:H*.35, vx:(Math.random()-.5)*14, vy:-Math.random()*14-4, s:4+Math.random()*7, r:Math.random()*6, vr:(Math.random()-.5)*.3, c:cols[Math.random()*cols.length|0]}));
+  const t0 = performance.now();
+  (function f(t){ c.clearRect(0,0,W,H); P.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; c.save(); c.translate(p.x,p.y); c.rotate(p.r); c.fillStyle = p.c; c.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); c.restore(); });
+    if (t - t0 < ms) requestAnimationFrame(f); else { c.clearRect(0,0,W,H); cv.hidden = true; } })(t0);
+}
+
+function overlay(html, opts={}){
+  closeOverlay();
+  const el = document.createElement("div"); el.className = "ov"; el.id = "ov"; el.innerHTML = html;
+  if (!opts.sticky) el.addEventListener("click", e => { if (e.target === el) closeOverlay(); });
+  document.body.appendChild(el); return el;
+}
+function closeOverlay(){ const o = $("#ov"); if (o) o.remove(); }
+
+/* ---------------- Code puzzle rendering ---------------- */
+function rParts(parts, ctx){
+  return parts.map(p => {
+    if (typeof p === "string") return `<span>${esc(p)}</span>`;
+    if (p.s) return rSlot(p.s, ctx);
+    if (p.v != null) return `<span class="val">${esc(p.v)}</span>`;
+    if (p.d != null) return `<span class="dd">${esc(p.d)}</span>`;
+    if (p.r) return `<span class="rep" style="--rc:${C[p.c]||C.sensorR}">${rParts(p.r, ctx)}</span>`;
+    if (p.b) return `<span class="bool" style="--bc:${p.bc||C.sensor}">${rParts(p.b, ctx)}</span>`;
+    return "";
+  }).join("");
+}
+function rSlot(sid, ctx){
+  const sl = ctx.slots[sid], v = ctx.answers[sid];
+  const cls = ["slot"]; if (v != null) cls.push("filled"); if (ctx.solved) cls.push("ok"); if ((ctx.hints||[]).includes(sid) && !ctx.solved) cls.push("hinted");
+  return `<button class="${cls.join(" ")}" data-act="slot" data-slot="${sid}" ${ctx.solved || ctx.locked ? "disabled" : ""} aria-label="Blank ${sid}: ${v != null ? esc(sl.opts[v]) : "empty"}">${v != null ? esc(sl.opts[v]) : "?"}</button>`;
+}
+function rNodes(nodes, ctx){
+  return nodes.map(n => {
+    const note = n.note ? `<span class="note">← ${esc(n.note)}</span>` : "";
+    if (n.k === "hat") return `<div class="ln"><div class="blk hat" style="--c:${C[n.c]}">${rParts(n.p, ctx)}</div></div>`;
+    if (n.k === "cmd") return `<div class="ln"><div class="blk" style="--c:${C[n.c]}">${rParts(n.p, ctx)}</div>${note}</div>`;
+    if (n.k === "forever") return `<div class="cb" style="--c:${C.control}"><div class="h">forever</div><div class="in">${rNodes(n.body, ctx)}</div><div class="f"></div></div>`;
+    if (n.k === "if") return `<div class="cb" style="--c:${C.control}"><div class="ln"><div class="h">${rParts(n.p, ctx)}</div>${note}</div><div class="in">${rNodes(n.body, ctx)}</div>${n.els ? `<div class="h mid">else</div><div class="in">${rNodes(n.els, ctx)}</div>` : ""}<div class="f"></div></div>`;
+    return "";
+  }).join("");
+}
+function slotPopover(btn, sl, onPick){
+  closePop();
+  const r = btn.getBoundingClientRect();
+  const el = document.createElement("div"); el.className = "pop"; el.id = "pop";
+  el.innerHTML = `<div class="q">Choose the missing piece. Discuss first!</div>` + sl.opts.map((o,i) => `<button data-i="${i}">${esc(o)}</button>`).join("");
+  document.body.appendChild(el);
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + "px";
+  el.style.top = (r.bottom + h + 8 < innerHeight ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + "px";
+  el.addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (b){ onPick(+b.dataset.i); closePop(); } });
+  setTimeout(() => document.addEventListener("pointerdown", outside, {capture:true}), 0);
+  function outside(e){ if (!el.contains(e.target)){ closePop(); } }
+  el._outside = outside;
+}
+function closePop(){ const p = $("#pop"); if (p){ document.removeEventListener("pointerdown", p._outside, {capture:true}); p.remove(); } }
+
+/* safe arc: a negative radius never stops an animation */
+(function(){ const P = CanvasRenderingContext2D.prototype, arc = P.arc; P.arc = function(x, y, r, a, b, cc){ return arc.call(this, x, y, Math.max(0.01, r || 0.01), a, b, cc); }; })();
+
+/* ---------------- Simulators (run the cracked program on a virtual mBot2) ---------------- */
+function drawBot(c, x, y, a, s, led){
+  c.save(); c.translate(x, y); c.rotate(a);
+  if (led){ c.shadowColor = led; c.shadowBlur = 22*s; }
+  c.fillStyle = "#1d2a44"; c.fillRect(-15*s, -15*s, 9*s, 30*s); c.fillRect(-15*s, -15*s, 30*s, 0); // wheels area
+  c.fillStyle = "#222"; c.fillRect(-12*s, -17*s, 16*s, 5*s); c.fillRect(-12*s, 12*s, 16*s, 5*s);
+  c.fillStyle = "#3D7BEF"; roundRect(c, -14*s, -12*s, 28*s, 24*s, 5*s); c.fill();
+  c.shadowBlur = 0;
+  c.fillStyle = led || "#BFD6FF"; roundRect(c, -8*s, -7*s, 12*s, 14*s, 3*s); c.fill();
+  c.fillStyle = "#0B0F18"; roundRect(c, 12*s, -9*s, 6*s, 18*s, 2*s); c.fill();
+  c.fillStyle = "#9AA6BB"; c.beginPath(); c.arc(16*s, -4.5*s, 2.6*s, 0, 7); c.arc(16*s, 4.5*s, 2.6*s, 0, 7); c.fill();
+  c.restore();
+}
+function roundRect(c, x, y, w, h, r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function sonarArcs(c, x, y, a, len, t, col="56,225,210"){
+  c.save(); c.translate(x, y); c.rotate(a);
+  c.fillStyle = `rgba(${col},.08)`; c.beginPath(); c.moveTo(0,0); c.arc(0,0,len,-.26,.26); c.closePath(); c.fill();
+  for (let i = 0; i < 3; i++){ const r = ((t*1.6 + i/3) % 1) * len; c.strokeStyle = `rgba(${col},${.9*(1 - r/len)})`; c.lineWidth = 2; c.beginPath(); c.arc(0,0,Math.max(1,r),-.26,.26); c.stroke(); }
+  c.restore();
+}
+
+class MazeSim {
+  constructor(canvas, tier, logEl){ this.cv = canvas; this.c = canvas.getContext("2d"); this.tier = tier; this.logEl = logEl; this.speed = 1; this.reset(); }
+  reset(){
+    cancelAnimationFrame(this.raf);
+    if (this.tier === "silver"){
+      this.W = 5; this.H = 4;
+      const path = [[3,0],[2,0],[1,0],[0,0],[0,1],[0,2],[1,2],[2,2],[2,3],[2,4],[3,4]];
+      this.open = new Set(); this.cells = new Set(path.map(p => p.join(",")));
+      for (let i = 1; i < path.length; i++) this.open.add(this.key(path[i-1], path[i]));
+      this.start = {r:3, c:0, h:0}; this.exit = {r:3, c:4};
+    } else {
+      this.W = 6; this.H = 5; this.open = new Set(); this.cells = null;
+      let seed = 20; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+      const seen = new Set(["4,0"]), stack = [[4,0]];
+      while (stack.length){
+        const [r,c] = stack[stack.length-1];
+        const nb = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([a,b]) => a>=0&&b>=0&&a<this.H&&b<this.W&&!seen.has(a+","+b));
+        if (!nb.length){ stack.pop(); continue; }
+        const n = nb[Math.floor(rnd()*nb.length)]; this.open.add(this.key([r,c], n)); seen.add(n.join(",")); stack.push(n);
+      }
+      this.start = {r:4, c:0, h:0}; this.exit = {r:0, c:5};
+    }
+    this.bot = {...this.start, x:this.start.c, y:this.start.r, a:this.start.h}; this.ping = null; this.lines = []; this.done = false; this.steps = 0;
+    this.prog = this.tier === "silver" ? this.silver() : this.gold();
+    this.log("Press <b>Run</b> to test your program."); this.draw(0);
+  }
+  key(a, b){ return [a.join(","), b.join(",")].sort().join("|"); }
+  canGo(r, c, h){ const d = [[-1,0],[0,1],[1,0],[0,-1]][h]; const n = [r+d[0], c+d[1]]; if (n[0]<0||n[1]<0||n[0]>=this.H||n[1]>=this.W) return false; return this.open.has(this.key([r,c], n)); }
+  dist(){ let {r,c,h} = this.bot, k = 0; while (this.canGo(r,c,h)){ const d = [[-1,0],[0,1],[1,0],[0,-1]][h]; r += d[0]; c += d[1]; k++; if (k > 10) break; } return 12 + k*40; }
+  onExit(){ return this.bot.r === this.exit.r && this.bot.c === this.exit.c; }
+  *silver(){
+    while (true){
+      if (this.onExit()){ yield {say:"Reached the exit! Silver complete.", win:true}; return; }
+      let d = this.dist(); yield {sense:d, say:`front = <b>${d} cm</b> ${d>20?"> 20 → path clear":"≤ 20 → blocked"}`};
+      if (d > 20) yield {move:1, say:"moves forward 20 cm"};
+      else { yield {turn:1, say:"turns right 90°"}; d = this.dist(); yield {sense:d, say:`front = <b>${d} cm</b> ${d<20?"→ still blocked":"→ clear"}`}; if (d < 20) yield {turn:2, say:"turns left 180°"}; }
+    }
+  }
+  *gold(){
+    while (true){
+      yield {turn:1, say:"peek: turns right 90°"};
+      let d = this.dist(); yield {sense:d, say:`right side = <b>${d} cm</b> ${d>35?"> 35 → opening!":"→ wall"}`};
+      if (d > 35) yield {move:1, say:"moves forward 25 cm"};
+      else {
+        yield {turn:-1, say:"turns left 90° (face original heading)"};
+        d = this.dist(); yield {sense:d, say:`straight = <b>${d} cm</b> ${d>20?"> 20 → open":"→ wall"}`};
+        if (d > 20) yield {move:1, say:"moves forward 25 cm"}; else yield {turn:-1, say:"turns left 90°"};
+      }
+      if (this.onExit()){ yield {say:"Quad RGB sees the dark exit zone → stop · level-up!", win:true}; return; }
+    }
+  }
+  log(s){ this.lines.unshift(s); this.lines = this.lines.slice(0,3); if (this.logEl) this.logEl.innerHTML = this.lines.map((l,i) => `<div style="opacity:${1-i*.3}">${l}</div>`).join(""); }
+  run(){
+    if (this.running) return; if (this.done) this.reset();
+    this.running = true; let act = null, t0 = 0;
+    const next = (now) => {
+      if (this.steps++ > 600){ this.running = false; this.log("Stopped after many steps."); return; }
+      const r = this.prog.next(); if (r.done){ this.running = false; return; }
+      act = r.value; t0 = now; if (act.say) this.log(act.say);
+      act.from = {x:this.bot.x, y:this.bot.y, a:this.bot.a};
+      if (act.turn){ this.bot.h = (this.bot.h + act.turn + 4) % 4; }
+      if (act.move){ const d = [[-1,0],[0,1],[1,0],[0,-1]][this.bot.h]; this.bot.r += d[0]; this.bot.c += d[1]; }
+      if (act.sense) Snd.tone(1700,.12,"sine",.05,0,1100);
+      act.dur = (act.sense ? 520 : act.move ? 560 : act.turn ? (Math.abs(act.turn) === 2 ? 650 : 420) : 600) / this.speed;
+      if (act.win){ this.done = true; Snd.good(); }
+    };
+    const loop = (now) => {
+      if (!act) next(now);
+      const k = Math.min(1, (now - t0) / act.dur), e = k < .5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2)/2;
+      if (act.turn){ const target = act.from.a + act.turn * Math.PI/2; this.bot.a = act.from.a + (target - act.from.a) * e; }
+      if (act.move){ this.bot.x = act.from.x + (this.bot.c - act.from.x) * e; this.bot.y = act.from.y + (this.bot.r - act.from.y) * e; }
+      this.ping = act.sense ? {len:act.sense, k} : null;
+      this.draw(now/1000);
+      if (k >= 1){ if (act.turn) this.bot.a = act.from.a + act.turn*Math.PI/2; if (act.win){ this.running = false; this.draw(now/1000); return; } act = null; }
+      if (this.running) this.raf = requestAnimationFrame(loop);
+    };
+    this.raf = requestAnimationFrame(loop);
+  }
+  draw(t){
+    const cv = this.cv, c = this.c; const Wp = cv.width = cv.clientWidth * devicePixelRatio, Hp = cv.height = cv.clientHeight * devicePixelRatio;
+    c.clearRect(0,0,Wp,Hp);
+    const cell = Math.min((Wp-40)/this.W, (Hp-70)/this.H), ox = (Wp - cell*this.W)/2, oy = (Hp - cell*this.H)/2 + 14;
+    for (let r = 0; r < this.H; r++) for (let q = 0; q < this.W; q++){
+      const used = !this.cells || this.cells.has(r+","+q);
+      c.fillStyle = used ? "#0E1A31" : "#060B16"; c.fillRect(ox+q*cell+1, oy+r*cell+1, cell-2, cell-2);
+    }
+    // exit zone
+    const ex = ox + this.exit.c*cell, ey = oy + this.exit.r*cell;
+    c.fillStyle = "#000"; c.fillRect(ex+4, ey+4, cell-8, cell-8);
+    c.strokeStyle = "#FFB547"; c.setLineDash([6,5]); c.lineWidth = 2; c.strokeRect(ex+4, ey+4, cell-8, cell-8); c.setLineDash([]);
+    c.fillStyle = "#FFB547"; c.font = `700 ${cell*.18}px Lexend, sans-serif`; c.textAlign = "center"; c.fillText("EXIT", ex+cell/2, ey+cell/2+cell*.06);
+    // start
+    c.fillStyle = "rgba(56,225,210,.25)"; c.fillRect(ox+this.start.c*cell+4, oy+this.start.r*cell+cell-10, cell-8, 6);
+    // walls
+    c.strokeStyle = "#D7E2F7"; c.lineWidth = Math.max(4, cell*.07); c.lineCap = "round";
+    for (let r = 0; r < this.H; r++) for (let q = 0; q < this.W; q++){
+      const x = ox+q*cell, y = oy+r*cell;
+      if (!this.canGo(r,q,0)){ c.beginPath(); c.moveTo(x,y); c.lineTo(x+cell,y); c.stroke(); }
+      if (!this.canGo(r,q,3)){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+cell); c.stroke(); }
+      if (r === this.H-1 && !this.canGo(r,q,2)){ c.beginPath(); c.moveTo(x,y+cell); c.lineTo(x+cell,y+cell); c.stroke(); }
+      if (q === this.W-1 && !this.canGo(r,q,1)){ c.beginPath(); c.moveTo(x+cell,y); c.lineTo(x+cell,y+cell); c.stroke(); }
+    }
+    const bx = ox + (this.bot.x+.5)*cell, by = oy + (this.bot.y+.5)*cell, ang = this.bot.a - Math.PI/2;
+    if (this.ping){ const len = Math.max(cell*.3, (this.ping.len-12)/40*cell + cell*.32); sonarArcs(c, bx, by, ang, len, t); c.fillStyle = "#38E1D2"; c.font = `700 ${cell*.16}px JetBrains Mono, monospace`; c.fillText(this.ping.len + " cm", bx, by - cell*.42); }
+    drawBot(c, bx, by, ang, cell/80, this.done ? "#4BE38A" : null);
+    c.fillStyle = "rgba(147,163,198,.8)"; c.font = `500 ${Math.max(11, cell*.12)}px Lexend`; c.textAlign = "left";
+    c.fillText(this.tier === "gold" ? "Unseen maze · 40 cm corridors" : "Practice maze · 40 cm corridors", ox, oy - 10);
+  }
+  stop(){ cancelAnimationFrame(this.raf); this.running = false; }
+}
+
+class SumoSim {
+  constructor(canvas, tier, logEl){ this.cv = canvas; this.c = canvas.getContext("2d"); this.tier = tier; this.logEl = logEl; this.speed = 1; this.reset(); }
+  reset(){
+    cancelAnimationFrame(this.raf); this.running = false; this.done = false;
+    this.R = .6; this.me = {x:-.12, y:.12, a:-2.6, v:0, w:0}; this.op = {x:.14, y:-.08, a:0}; this.t = 0; this.mode = "wait"; this.until = 3; this.led = null; this.lines = []; this.win = false;
+    this.arc = Math.random() < .5 ? 1 : 2;
+    this.log("Press <b>Run</b>. Button A → the 3-second fair-start wait begins.");
+    this.draw();
+  }
+  log(s){ if (this.lines[0] === s) return; this.lines.unshift(s); this.lines = this.lines.slice(0,3); if (this.logEl) this.logEl.innerHTML = this.lines.map((l,i) => `<div style="opacity:${1-i*.3}">${l}</div>`).join(""); }
+  probes(){ const m = this.me, fx = Math.cos(m.a), fy = Math.sin(m.a), px = -fy, py = fx; return [[m.x+fx*.085+px*.06, m.y+fy*.085+py*.06],[m.x+fx*.085-px*.06, m.y+fy*.085-py*.06]]; }
+  edge(){ return this.probes().some(([x,y]) => Math.hypot(x,y) > this.R - .035); }
+  sonar(){ const m = this.me, dx = this.op.x - m.x, dy = this.op.y - m.y, d = Math.hypot(dx,dy); let da = Math.atan2(dy,dx) - m.a; da = Math.atan2(Math.sin(da), Math.cos(da)); return (Math.abs(da) < (d < .22 ? .75 : .27) && !this.opOut) ? Math.max(1, Math.round((d - .08)*100)) : 400; }
+  step(dt){
+    const m = this.me, gold = this.tier === "gold"; this.t += dt;
+    const rpm = r => r * .0034;
+    if (this.mode === "wait"){ this.until -= dt; this.log(`wait 3 seconds… <b>${Math.max(0,this.until).toFixed(1)}</b>`); if (this.until <= 0){ if (gold){ this.mode = "arc"; this.until = 1; this.log(`pick random 1 to 2 → <b>${this.arc}</b> → arc ${this.arc===1?"left":"right"}`); } else this.mode = "loop"; } }
+    else if (this.mode === "arc"){ m.v = rpm(55); m.w = this.arc === 1 ? -1.1 : 1.1; this.until -= dt; if (this.until <= 0) this.mode = "loop"; }
+    else if (this.mode === "back"){ m.v = -rpm(40); m.w = 0; this.until -= dt; if (this.until <= 0){ this.mode = "turn"; this.turnLeft = 135*Math.PI/180; } }
+    else if (this.mode === "turn"){ m.v = 0; m.w = 2.6; this.turnLeft -= m.w*dt; if (this.turnLeft <= 0) this.mode = "loop"; }
+    if (this.mode === "loop"){
+      const d = this.sonar();
+      if (this.edge()){ this.mode = "back"; this.until = .5; this.led = gold ? "#FF9F1C" : null; this.log("PRIORITY 1 · <b>edge!</b> L2/R2 see the white line → back up, turn 135°"); Snd.tone(520,.08,"square",.05); }
+      else if (d < 30){ m.v = rpm(100); m.w = 0; this.led = gold ? "#FF3B3B" : null; this.log(`PRIORITY 2 · opponent at <b>${d} cm</b> → PUSH at 100 RPM`); }
+      else { m.v = 0; m.w = gold ? 2.2 : 1.6; this.led = gold ? "#FF9F1C" : null; this.log(`PRIORITY 3 · nothing under 30 cm (${d>300?"—":d+" cm"}) → scan right ${gold?"40":"30"} RPM`); }
+    }
+    m.a += m.w*dt; m.x += Math.cos(m.a)*m.v*dt; m.y += Math.sin(m.a)*m.v*dt;
+    // push contact
+    const dx = this.op.x - m.x, dy = this.op.y - m.y, d = Math.hypot(dx,dy);
+    if (d < .17 && !this.opOut){ const push = Math.max(0, m.v) * .9; this.op.x += Math.cos(m.a)*push*dt; this.op.y += Math.sin(m.a)*push*dt; const nd = Math.hypot(this.op.x - m.x, this.op.y - m.y); if (nd < .15){ this.op.x = m.x + (this.op.x - m.x)/nd*.15; this.op.y = m.y + (this.op.y - m.y)/nd*.15; } }
+    else if (!this.opOut && this.mode !== "wait" && d > .22){ const sp = gold ? .05 : .03; this.op.a += dt*.8; this.op.x += (-dx/d*.7 + Math.cos(this.op.a)*.3)*sp*dt; this.op.y += (-dy/d*.7 + Math.sin(this.op.a*1.3)*.3)*sp*dt; const r = Math.hypot(this.op.x,this.op.y); if (r > .42){ this.op.x *= .42/r; this.op.y *= .42/r; } }
+    if (!this.opOut && Math.hypot(this.op.x, this.op.y) > this.R - .02){ this.op.x *= 1.12; this.op.y *= 1.12; this.opOut = true; this.win = true; this.winAt = this.t; Snd.good(); }
+    if (this.win && this.t - this.winAt > 1.8){ this.done = true; this.running = false; this.log("🏆 <b>Opponent out of the ring.</b> Your robot stayed in. Mission logic works!"); }
+    if (this.t > 30 && !this.win){ this.running = false; this.done = true; this.log("Time! Try again."); }
+  }
+  run(){
+    if (this.running) return; if (this.done) this.reset(); this.running = true; let last = performance.now();
+    const loop = now => { const dt = Math.min(.05, (now - last)/1000) * this.speed; last = now; for (let i = 0; i < 2; i++) this.step(dt/2); this.draw(now/1000); if (this.running) this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+  }
+  draw(ts=0){
+    const cv = this.cv, c = this.c; const W = cv.width = cv.clientWidth*devicePixelRatio, H = cv.height = cv.clientHeight*devicePixelRatio;
+    const S = Math.min(W,H)/(this.R*2.5), cx = W/2, cy = H/2;
+    c.clearRect(0,0,W,H);
+    c.fillStyle = "#05080F"; c.beginPath(); c.arc(cx, cy, this.R*S, 0, 7); c.fill();
+    c.strokeStyle = "#F4F7FF"; c.lineWidth = .05*S; c.beginPath(); c.arc(cx, cy, (this.R-.025)*S, 0, 7); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,.08)"; c.lineWidth = 2; [.2,.4].forEach(r => { c.beginPath(); c.arc(cx,cy,r*S,0,7); c.stroke(); });
+    c.fillStyle = "rgba(147,163,198,.85)"; c.font = `500 ${Math.max(11,S*.035)}px Lexend`; c.textAlign = "center"; c.fillText("Ring Ø 120 cm · white boundary", cx, cy + this.R*S + S*.07);
+    // opponent
+    c.save(); c.translate(cx + this.op.x*S, cy + this.op.y*S); c.rotate(this.op.a);
+    c.fillStyle = this.opOut ? "#5a2230" : "#B23A55"; roundRect(c, -.07*S, -.07*S, .14*S, .14*S, .02*S); c.fill();
+    c.fillStyle = "#fff"; c.font = `700 ${S*.04}px Lexend`; c.textAlign = "center"; c.fillText("OPP", 0, S*.014); c.restore();
+    const m = this.me, sx = cx + m.x*S, sy = cy + m.y*S;
+    if (this.running && this.mode === "loop"){ const d = this.sonar(); sonarArcs(c, sx, sy, m.a, Math.min(d < 300 ? (d/100+.1) : .45, .5)*S, ts); }
+    drawBot(c, sx, sy, m.a, S*.0062, this.led);
+    this.probes().forEach(([x,y]) => { const on = Math.hypot(x,y) > this.R - .035; c.fillStyle = on ? "#FFFFFF" : "#38E1D2"; c.beginPath(); c.arc(cx + x*S, cy + y*S, on ? 5 : 3, 0, 7); c.fill(); });
+    if (this.mode === "wait" && this.running){ c.fillStyle = "#FFB547"; c.font = `400 ${S*.18}px Bungee, Impact`; c.fillText(Math.ceil(this.until), cx, cy - this.R*S*.45); }
+    if (this.win){ c.fillStyle = "#4BE38A"; c.font = `400 ${S*.11}px Bungee, Impact`; c.fillText("OUT!", cx, cy - this.R*S*.55); }
+  }
+  stop(){ cancelAnimationFrame(this.raf); this.running = false; }
+}
+
+/* ---------------- The Ignite film (canvas + narration + soundtrack) ---------------- */
+class Film {
+  constructor(canvas, barEl, subEl){ this.cv = canvas; this.c = canvas.getContext("2d"); this.bar = barEl; this.sub = subEl; this.t = 0; this.playing = false; this.spoken = -1; this.beat = -1;
+    this.scenes = [
+      {d:9,  say:"In total darkness, a bat hunts. It cannot see its prey. So it shouts… and listens for the echo.", cap:"In total darkness, a bat hunts with SOUND."},
+      {d:9,  say:"Sound goes out. The echo comes back. The longer the echo takes, the farther away the object is.", cap:"Sound out · echo back · time = distance"},
+      {d:10, say:"Engineers copied the bat. These two eyes on your robot are not eyes. One sends sound. The other listens for the echo. This is the ultrasonic sensor.", cap:"The ultrasonic sensor: one side speaks, one side listens."},
+      {d:16, say:"Cars use it to park without crashing. Robot vacuums use it to dodge your sofa. Warehouse robots use it to stop for people. And self-driving cars sense the whole road.", cap:"Distance sensors are everywhere."},
+      {d:10, say:"Today, in Arena One, your robot must escape a maze. No memorised turns. Sense the walls. Follow a rule.", cap:"ARENA 1 · THE MAZE"},
+      {d:10, say:"In Arena Two: the ring. Find the opponent. Push with full power. And never, ever leave the ring.", cap:"ARENA 2 · THE RING"},
+      {d:13, say:"Four teams. Two arenas. One gold medal. Crack the code. Test your robot. Beat the clock. Three. Two. One. Mission start!", cap:"Crack the code · Test the robot · Beat the clock"}
+    ];
+    this.total = this.scenes.reduce((a,s) => a + s.d, 0); this.draw();
+  }
+  sceneAt(t){ let a = 0; for (let i = 0; i < this.scenes.length; i++){ if (t < a + this.scenes[i].d) return [i, t - a, this.scenes[i].d]; a += this.scenes[i].d; } return [this.scenes.length-1, this.scenes.at(-1).d, this.scenes.at(-1).d]; }
+  play(){
+    if (this.playing) return; if (this.t >= this.total) { this.t = 0; this.spoken = -1; }
+    this.playing = true; Snd.ctx(); let last = performance.now();
+    const loop = now => { if (!this.playing) return; this.t += Math.min(.1, (now - last)/1000); last = now; if (this.t >= this.total){ this.t = this.total; this.playing = false; this.onEnd && this.onEnd(); } try { this.audio(); this.draw(); } catch(e){ console.warn(e); } this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop); this.onState && this.onState();
+  }
+  pause(){ this.playing = false; cancelAnimationFrame(this.raf); try { speechSynthesis.pause(); } catch(e){} this.onState && this.onState(); }
+  resume(){ try { speechSynthesis.resume(); } catch(e){} this.play(); }
+  restart(){ this.stopVoice(); this.t = 0; this.spoken = -1; this.beat = -1; this.playing = false; this.play(); }
+  stopVoice(){ try { speechSynthesis.cancel(); } catch(e){} }
+  audio(){
+    const [i, lt] = this.sceneAt(this.t);
+    if (i !== this.spoken){ this.spoken = i; this.speak(this.scenes[i].say); }
+    const bpm = 112, b = Math.floor(this.t * bpm / 60);
+    if (b !== this.beat){ this.beat = b;
+      if (i >= 3 || (i === 2 && lt > 5)){ Snd.tone(70,.22,"sine",.32,0,40); if (b % 2) Snd.tone(9000,.03,"square",.012); }
+      if (b % 4 === 0) Snd.tone(i >= 6 ? 110 : 55, 1.8, "sawtooth", .025);
+      if ((i === 0 || i === 1) && b % 3 === 0) Snd.ping();
+      if (i === 3 && lt < 4){ const rate = 1 + Math.floor(lt*1.5); for (let k = 0; k < rate; k++) Snd.tone(1400,.06,"square",.04,k*(.5/rate)); }
+      if (i === 6 && lt > 9.4){ Snd.tone(220,.3,"square",.1); }
+    }
+  }
+  speak(text){
+    if (!Snd.on) return;
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 1.02; u.pitch = .95; u.volume = 1;
+      const vs = speechSynthesis.getVoices(); const v = vs.find(v => /en(-|_)(US|GB)/i.test(v.lang) && /Google|Natural|Aria|Guy|Daniel|Samantha|Alex/i.test(v.name)) || vs.find(v => /^en/i.test(v.lang)); if (v) u.voice = v;
+      speechSynthesis.speak(u); } catch(e){}
+  }
+  draw(){
+    const cv = this.cv, c = this.c; const W = cv.width = cv.clientWidth*devicePixelRatio, H = cv.height = cv.clientHeight*devicePixelRatio; if (!W) return;
+    const [i, lt, d] = this.sceneAt(this.t), T = this.t, u = W/1600;
+    c.fillStyle = "#03060D"; c.fillRect(0,0,W,H);
+    const fade = Math.min(1, lt/.6, (d - lt)/.5);
+    c.save(); c.globalAlpha = Math.max(0, fade);
+    const txt = (s, x, y, size, col="#ECF2FF", font="Bungee, Impact", align="center") => { c.fillStyle = col; c.font = `400 ${size*u}px ${font}`; c.textAlign = align; c.fillText(s, x, y); };
+    const stars = () => { for (let k = 0; k < 90; k++){ const x = (k*373 % 1600)*u, y = (k*137 % 900)*u; c.fillStyle = `rgba(200,220,255,${.15 + .3*Math.abs(Math.sin(T*.7 + k))})`; c.fillRect(x, y, 2*u, 2*u); } };
+    if (!this.started && this.t === 0){ c.restore(); c.fillStyle = "#03060D"; c.fillRect(0,0,W,H); txt("ECHO ARENA", W/2, H/2, 120, "#38E1D2"); txt("THE SENSOR FILM", W/2, H/2 + 70*u, 30, "#93A3C6", "Lexend"); return; }
+    this.started = true;
+    if (i === 0){
+      stars();
+      const bx = (200 + lt*95)*u, by = (430 + Math.sin(lt*3)*40)*u, flap = Math.sin(T*14);
+      c.fillStyle = "#0a0f1a"; c.strokeStyle = "#5c6b8a"; c.lineWidth = 2*u;
+      c.save(); c.translate(bx, by); c.scale(1.9, 1.9); c.translate(-bx, -by); c.fillStyle = "#1a2236"; c.beginPath(); c.moveTo(bx, by); c.quadraticCurveTo(bx-60*u, by-60*u*flap, bx-120*u, by-10*u*flap); c.quadraticCurveTo(bx-70*u, by+10*u, bx, by+12*u);
+      c.quadraticCurveTo(bx+70*u, by+10*u, bx+120*u, by-10*u*flap); c.quadraticCurveTo(bx+60*u, by-60*u*flap, bx, by); c.fill(); c.stroke(); c.fillStyle = "#38E1D2"; c.beginPath(); c.arc(bx+8*u, by-2*u, 2.5*u, 0, 7); c.fill(); c.restore();
+      const mx = 1250*u, my = (420 + Math.sin(T*2)*30)*u;
+      if (lt < 7.2){ c.fillStyle = "#cdb98a"; c.beginPath(); c.ellipse(mx, my, 16*u, 9*u, Math.sin(T*20)*.4, 0, 7); c.fill(); }
+      for (let k = 0; k < 4; k++){ const r = ((lt*1.1 + k/4) % 1); c.strokeStyle = `rgba(56,225,210,${1-r})`; c.lineWidth = 3*u; c.beginPath(); c.arc(bx+20*u, by, r*(mx-bx), -.35, .35); c.stroke();
+        c.strokeStyle = `rgba(255,181,71,${(1-r)*.8})`; c.beginPath(); c.arc(mx, my, r*(mx-bx)*.6, Math.PI-.35, Math.PI+.35); c.stroke(); }
+      txt(lt < 4.5 ? "IN TOTAL DARKNESS…" : "…IT HUNTS WITH SOUND", W/2, 160*u, 64, lt < 4.5 ? "#ECF2FF" : "#38E1D2");
+    } else if (i === 1){
+      const wx = 1250*u, sx = 260*u, y = 470*u, k = (lt % 4.5)/4.5;
+      c.fillStyle = "#16233F"; c.fillRect(wx, 250*u, 60*u, 440*u);
+      c.fillStyle = "#38E1D2"; c.beginPath(); c.arc(sx, y, 30*u, 0, 7); c.fill();
+      const go = k < .5, px = go ? sx + (wx - sx)*k*2 : wx - (wx - sx)*(k-.5)*2;
+      c.strokeStyle = go ? "#38E1D2" : "#FFB547"; c.lineWidth = 6*u;
+      for (let j = 0; j < 3; j++){ c.beginPath(); c.arc(px - (go?1:-1)*j*22*u, y, 60*u, go ? -.5 : Math.PI-.5, go ? .5 : Math.PI+.5); c.globalAlpha = Math.max(0, fade)*(1 - j*.3); c.stroke(); }
+      c.globalAlpha = Math.max(0, fade);
+      txt("SOUND OUT", 560*u, 330*u, 44, "#38E1D2"); txt("ECHO BACK", 980*u, 640*u, 44, "#FFB547");
+      txt(`${(k*5.8).toFixed(1)} ms`, sx, y + 110*u, 40, "#ECF2FF", "JetBrains Mono");
+      if (lt > 4){ txt("distance = speed of sound × time ÷ 2", W/2, 800*u, 40, "#ECF2FF", "Lexend"); txt("sound travels about 343 metres every second", W/2, 850*u, 26, "#93A3C6", "Lexend"); }
+      txt("TIME = DISTANCE", W/2, 170*u, 72);
+    } else if (i === 2){
+      const cx = W/2, cy = 480*u, s = 1 + Math.min(1, lt/3)*.6;
+      c.save(); c.translate(cx, cy); c.scale(s, s);
+      c.fillStyle = "#0B0F18"; roundRect(c, -260*u, -90*u, 520*u, 180*u, 30*u); c.fill(); c.strokeStyle = "#2a3a5e"; c.lineWidth = 4*u; c.stroke();
+      [-120, 120].forEach((x, j) => { c.fillStyle = "#3a4152"; c.beginPath(); c.arc(x*u, 0, 70*u, 0, 7); c.fill(); c.fillStyle = "#9AA6BB"; c.beginPath(); c.arc(x*u, 0, 52*u, 0, 7); c.fill();
+        c.strokeStyle = "#6b768c"; c.lineWidth = 3*u; for (let r = 10; r < 50; r += 10){ c.beginPath(); c.arc(x*u, 0, r*u, 0, 7); c.stroke(); } });
+      c.restore();
+      if (lt > 2.5){ for (let k = 0; k < 4; k++){ const r = ((lt*.9 + k/4) % 1); c.strokeStyle = `rgba(56,225,210,${1-r})`; c.lineWidth = 4*u; c.beginPath(); c.arc(cx - 192*u, cy - 300*u*r - 120*u, 40*u + r*120*u, Math.PI*1.2, Math.PI*1.8); c.stroke();
+        c.strokeStyle = `rgba(255,181,71,${r})`; c.beginPath(); c.arc(cx + 192*u, cy - 120*u - 300*u*(1-r), 40*u + (1-r)*120*u, Math.PI*1.2, Math.PI*1.8); c.stroke(); } }
+      if (lt > 3.5){ txt("SPEAKS", cx - 192*u, 800*u, 40, "#38E1D2"); txt("LISTENS", cx + 192*u, 800*u, 40, "#FFB547"); }
+      txt("ULTRASONIC SENSOR", W/2, 140*u, 70);
+      txt("too high-pitched for human ears", W/2, 190*u, 28, "#93A3C6", "Lexend");
+    } else if (i === 3){
+      const p = Math.min(3, Math.floor(lt/4)), pl = lt - p*4;
+      const titles = ["PARKING SENSORS","ROBOT VACUUMS","WAREHOUSE ROBOTS","SELF-DRIVING CARS"];
+      txt(titles[p], W/2, 150*u, 72, "#ECF2FF");
+      txt(["beep… beep. beep-beep-beep!","dodging the sofa","stopping for people","sensing the whole road"][p], W/2, 200*u, 30, "#93A3C6", "Lexend");
+      c.fillStyle = "#0E1A31"; c.fillRect(0, 700*u, W, 6*u);
+      if (p === 0){ const x = (300 + pl*170)*u; c.fillStyle = "#16233F"; c.fillRect(1250*u, 380*u, 80*u, 320*u);
+        c.fillStyle = "#3D7BEF"; roundRect(c, x, 560*u, 360*u, 110*u, 30*u); c.fill(); roundRect(c, x+70*u, 480*u, 200*u, 100*u, 30*u); c.fill();
+        c.fillStyle = "#111"; [x+70*u, x+290*u].forEach(wx => { c.beginPath(); c.arc(wx, 680*u, 36*u, 0, 7); c.fill(); });
+        const gap = 1250*u - (x + 360*u); sonarArcs(c, x + 360*u, 615*u, 0, Math.max(10, gap), T*1.5);
+        txt(Math.max(0, Math.round(gap/u/4)) + " cm", 1100*u, 470*u, 46, gap < 160*u ? "#FF5C7A" : "#38E1D2", "JetBrains Mono"); }
+      if (p === 1){ c.fillStyle = "#5a3a7a"; roundRect(c, 950*u, 430*u, 420*u, 270*u, 40*u); c.fill(); txt("SOFA", 1160*u, 580*u, 40, "#e7d8ff");
+        const ang = pl < 2 ? 0 : Math.min(1.6, (pl-2)*1.4), vx = 400*u + Math.min(pl, 2)*220*u + Math.sin(ang)*0, vy = 600*u - (pl > 2 ? (pl-2)*90*u : 0);
+        c.fillStyle = "#2b2f3a"; c.beginPath(); c.arc(vx, vy, 80*u, 0, 7); c.fill(); c.fillStyle = "#38E1D2"; c.beginPath(); c.arc(vx, vy, 16*u, 0, 7); c.fill();
+        sonarArcs(c, vx, vy, -ang, 150*u, T*1.5); }
+      if (p === 2){ for (let k = 0; k < 4; k++){ c.fillStyle = "#1c2b4a"; c.fillRect((180 + k*360)*u, 300*u, 220*u, 380*u); }
+        const rx = Math.min(700, 200 + pl*260)*u; c.fillStyle = "#FFB547"; roundRect(c, rx, 600*u, 200*u, 80*u, 14*u); c.fill();
+        c.fillStyle = "#ECF2FF"; c.beginPath(); c.arc(1000*u, 520*u, 34*u, 0, 7); c.fill(); c.fillRect(975*u, 555*u, 50*u, 140*u);
+        sonarArcs(c, rx + 200*u, 640*u, 0, 1000*u - rx - 210*u, T*1.5); if (pl > 2.5) txt("STOP", rx + 100*u, 580*u, 40, "#FF5C7A"); }
+      if (p === 3){ for (let k = -2; k < 3; k++){ c.fillStyle = "rgba(255,255,255,.4)"; c.fillRect(W/2 - 8*u + k*300*u + ((T*400*u) % (300*u)), 760*u, 120*u, 10*u); }
+        c.fillStyle = "#E6ECF8"; roundRect(c, 600*u, 520*u, 400*u, 140*u, 40*u); c.fill(); c.fillStyle = "#38E1D2"; c.beginPath(); c.arc(800*u, 505*u, 26*u, 0, 7); c.fill();
+        for (let k = 0; k < 3; k++){ const r = ((T*.8 + k/3) % 1); c.strokeStyle = `rgba(56,225,210,${1-r})`; c.lineWidth = 3*u; c.beginPath(); c.arc(800*u, 505*u, r*520*u, 0, 7); c.stroke(); } }
+    } else if (i === 4){
+      txt("ARENA 1", W/2, 140*u, 46, "#93A3C6"); txt("THE MAZE", W/2, 230*u, 110, "#38E1D2");
+      const cell = 110*u, ox = W/2 - cell*3, oy = 300*u;
+      c.strokeStyle = "#D7E2F7"; c.lineWidth = 8*u; c.lineCap = "round";
+      const walls = [[0,0,6,0],[0,0,0,5],[6,0,6,4],[0,5,6,5],[1,1,4,1],[1,1,1,4],[2,2,5,2],[5,2,5,4],[2,3,4,3],[2,3,2,5],[3,4,5,4]];
+      walls.forEach(([a,b,c2,d2]) => { c.beginPath(); c.moveTo(ox+a*cell, oy+b*cell); c.lineTo(ox+c2*cell, oy+d2*cell); c.stroke(); });
+      const path = [[.5,4.5],[.5,.5],[5.5,.5],[5.5,1.5],[1.5,1.5],[1.5,2.5],[4.5,2.5],[4.5,3.5],[5.5,3.5],[5.5,4.6]];
+      const k = Math.min(path.length-1.001, lt*.95), j = Math.floor(k), f = k - j, A = path[j], B = path[j+1];
+      const x = ox + (A[0] + (B[0]-A[0])*f)*cell, y = oy + (A[1] + (B[1]-A[1])*f)*cell, ang = Math.atan2(B[1]-A[1], B[0]-A[0]);
+      sonarArcs(c, x, y, ang, 140*u, T); drawBot(c, x, y, ang, 1.7*u);
+    } else if (i === 5){
+      txt("ARENA 2", W/2, 140*u, 46, "#93A3C6"); txt("THE RING", W/2, 230*u, 110, "#FF6FB1");
+      const cx = W/2, cy = 590*u, R = 230*u;
+      c.fillStyle = "#05080F"; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 14*u; c.stroke();
+      const opx = cx + Math.min(R+60*u, 60*u + Math.max(0, lt-4)*110*u), ang = lt < 3 ? lt*1.4 : 0, mx = lt < 3 ? cx - 120*u : cx - 120*u + Math.min(opx - cx - 10*u, (lt-3)*130*u);
+      c.fillStyle = "#B23A55"; roundRect(c, opx - 40*u, cy - 40*u, 80*u, 80*u, 12*u); c.fill();
+      sonarArcs(c, mx, cy, ang + (lt<3?Math.PI*0:0), 140*u, T, lt > 3 ? "255,59,59" : "56,225,210"); drawBot(c, mx, cy, ang, 2*u, lt > 3 ? "#FF3B3B" : "#FF9F1C");
+      if (lt > 6.4) txt("OUT!", cx + R + 210*u, cy - 70*u, 90, "#4BE38A");
+    } else if (i === 6){
+      const seq = ["FOUR TEAMS","TWO ARENAS","ONE GOLD MEDAL"]; const k = Math.min(2, Math.floor(lt/1.6));
+      if (lt < 6.2){ txt(seq[k], W/2, 470*u, 120, k === 2 ? "#F6C445" : "#ECF2FF"); if (k === 2){ c.restore(); return this.medalDraw(c, W, H, u, lt); } }
+      else if (lt < 9.4){ txt("CRACK THE CODE", W/2, 360*u, 80, "#38E1D2"); if (lt > 7) txt("TEST THE ROBOT", W/2, 470*u, 80); if (lt > 8.2) txt("BEAT THE CLOCK", W/2, 580*u, 80, "#FFB547"); }
+      else if (lt < 12){ const n = 3 - Math.floor((lt - 9.4)/.85); txt(String(Math.max(1,n)), W/2, 600*u, 320, "#38E1D2"); }
+      else { txt("MISSION START", W/2, 520*u, 130, "#4BE38A"); }
+    }
+    c.restore();
+    if (this.bar) this.bar.style.width = (this.t/this.total*100) + "%";
+    if (this.sub) this.sub.textContent = this.scenes[i].cap;
+  }
+  medalDraw(c, W, H, u, lt){
+    const y = 620*u + Math.sin(lt*3)*8*u;
+    [["#F6C445",0],["#CDD6E3",-260],["#D98B4E",260]].forEach(([col, dx], j) => { const s = j ? .7 : 1; const x = W/2 + dx*u;
+      c.fillStyle = col; c.beginPath(); c.arc(x, y + (j?40:0)*u, 90*u*s, 0, 7); c.fill(); c.fillStyle = "rgba(0,0,0,.25)"; c.font = `400 ${80*u*s}px Bungee`; c.textAlign = "center"; c.fillText(String(j===0?1:j===1?2:3), x, y + (j?40:0)*u + 28*u*s); });
+    if (this.bar) this.bar.style.width = (this.t/this.total*100) + "%";
+    if (this.sub) this.sub.textContent = this.scenes[6].cap;
+  }
+}
+
+/* ---------------- App ---------------- */
+const App = { view:"landing", teamId:null, unlocked:false, draft:{}, sims:{}, film:null, seenFinish:null, seenVerify:null, seenJudge:null, dockHidden:false, local:{} };
+
+function parseHash(){
+  const h = (location.hash || "").replace("#","");
+  if (h === "control") return {view:"control"};
+  if (h === "screen") return {view:"screen"};
+  const m = h.match(/^team-([1-4])$/); if (m) return {view:"team", teamId:"t"+m[1]};
+  const saved = lsGet("echoArena.team"); if (saved && TEAM_IDS.includes(saved)) return {view:"team", teamId:saved};
+  return {view:"landing"};
+}
+
+let renderQueued = false;
+function render(){ if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; doRender(); }); }
+function region(el, key, fn){ if (!el) return; if (el.dataset.key !== key){ el.dataset.key = key; el.innerHTML = fn(); } }
+
+function doRender(){
+  const app = $("#app");
+  if (App.view === "landing") return renderLanding(app);
+  if (App.view === "team") return renderTeam(app);
+  if (App.view === "control" && !App.unlocked) return renderPin(app);
+  return renderScreen(app);
+}
+
+/* ---------- landing ---------- */
+function renderLanding(app){
+  const s = st();
+  region(app, "landing|" + JSON.stringify(cfg().teams), () => `
+  <div class="wrap"><div class="land">
+    <div class="hero">
+      <div class="logo">${logoMark}<div><b>ECHO ARENA</b><small>mBot2 · Sensor Challenge</small></div></div>
+      <h1>Sense it.<br><em>Code it.</em><br>Win it.</h1>
+      <p>Your team gets one mission, part of the code, and a ticking clock. Crack the missing blocks together, test your mBot2, and race the other teams to the gold medal.</p>
+    </div>
+    <div class="eyebrow">Choose your team</div>
+    <div class="teamgrid">${TEAM_IDS.map(id => { const c = tcfg(id), ch = CH[c.challenge]; return `
+      <button class="tcard" style="--tc:${c.color}" data-act="pick" data-team="${id}">
+        <div style="display:flex;align-items:center;gap:12px">${emb(id)}<div><h3>${esc(c.name)}</h3><div class="muted" style="font-size:13px">${esc(ch.arena)}</div></div></div>
+        <div class="tierline">${stagesOf(id).map(x => `<span class="tier ${x}">${x}</span>`).join("")}</div>
+      </button>`; }).join("")}</div>
+    <div class="muted" style="font-size:13px">Teacher? <a href="#control" style="color:var(--sonar)">Open Mission Control</a></div>
+  </div></div>`);
+}
+
+/* ---------- PIN ---------- */
+function renderPin(app){
+  region(app, "pin", () => `<div class="wrap"><div class="land" style="max-width:420px">
+    <div class="logo">${logoMark}<div><b>MISSION CONTROL</b><small>Teacher only</small></div></div>
+    <form id="pinform" class="panel box">
+      <label class="fld">Teacher PIN<input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"></label>
+      <button class="btn pri" type="submit">Open Mission Control</button>
+      <div id="pinmsg" class="muted" style="font-size:13px">The PIN is set in Mission Control → Setup.</div>
+    </form></div></div>`);
+  const f = $("#pinform"); if (f && !f._b){ f._b = 1; f.addEventListener("submit", e => { e.preventDefault(); if ($("#pin").value.trim() === String(cfg().pin)){ App.unlocked = true; try { sessionStorage.setItem("echoArena.unlocked","1"); } catch(err){} bootControl(); render(); } else { $("#pinmsg").textContent = "That PIN doesn't match. Try again."; $("#pinmsg").style.color = "var(--bad)"; } }); setTimeout(() => $("#pin") && $("#pin").focus(), 50); }
+}
+
+/* ---------- screen + control ---------- */
+function renderScreen(app){
+  const s = st(), ctrl = App.view === "control";
+  if (!s){ region(app, "noState", () => `<div class="wrap"><div class="wait"><div class="sonar"><i></i><i></i><i></i><div class="core"></div></div><h2>Waiting for Mission Control</h2><p class="muted">Open this page with #control on the teacher's computer to start the class.</p></div></div>`); return; }
+  region(app, "screenShell|" + ctrl, () => `
+    <div class="screen">
+      <div class="bar wrap"><div class="logo">${logoMark}<div><b>ECHO ARENA</b><small id="clsname"></small></div></div>
+        <div class="rail" id="rail"></div><div class="grow"></div><div id="modechip"></div><div class="timer tnum" data-timer>--:--</div></div>
+      <div class="wrap"><div class="stage" id="stage"></div></div>
+    </div>
+    ${ctrl ? `<div class="dock" id="dock"><div class="wrap in" id="dockin"></div></div><button class="btn sm showdock" id="showdock" data-act="dock" hidden>Show controls</button>` : ""}`);
+  $("#clsname").textContent = cfg().className + " · mBot2 sensor challenge";
+  region($("#rail"), "rail|" + s.phase, () => PHASES.map((p,i) => `<span class="ph ${i < phaseIdx(s.phase) ? "done" : ""} ${p.id === s.phase ? "cur" : ""}">${p.name}</span>`).join(""));
+  region($("#modechip"), "mode|" + Store.mode + Store.live + JSON.stringify(Store.online), () => Store.mode === "server" ? (Store.live ? `<span class="chip"><span class="dot live"></span>Live · ${Object.keys(Store.online).filter(k => k.startsWith("t")).length}/4 teams online</span>` : `<span class="chip" style="border-color:var(--signal);color:var(--signal)">Reconnecting…</span>`) : `<span class="chip" title="Not syncing between devices">Single screen</span>`);
+  const stage = $("#stage");
+  ({lobby:sLobby, intro:sIntro, brief:sBrief, lab:sLab, check:sCheck, share:sShare, quiz:sQuiz, podium:sPodium})[s.phase](stage, s, ctrl);
+  if (ctrl) renderDock(s);
+  watchEvents(s);
+}
+
+function sLobby(stage, s){
+  const c = cfg(), url = c.joinUrl || JOIN_URL_DEFAULT;
+  const joined = TEAM_IDS.map(id => `${id}:${team(id).joined?1:0}:${Store.online[id]?1:0}`).join(",");
+  region(stage, "lobby|" + joined + "|" + url + "|" + JSON.stringify(c.teams), () => `
+    <div class="lobby">
+      <div style="display:grid;gap:1.4em">
+        <div class="eyebrow">Today's mission · mBot2 with CyberPi</div>
+        <h1>Give your robot<em>a sense.</em></h1>
+        <p class="lead">Four teams. Two arenas. Part of the code is missing. Discuss, decide, test the real robot, and race to the gold medal.</p>
+        <ol class="agenda">${PHASES.slice(1).map((p,i) => `<li><span class="n">${i+1}</span><span>${esc(p.name)}</span><span class="muted tnum">${p.id==="lab" ? c.labMin : p.min} min</span></li>`).join("")}</ol>
+      </div>
+      <div class="panel joinbox">
+        <div class="eyebrow">Scan to join your team</div>
+        ${url && window.qrcode ? `<div class="qr">${qrSVG(url)}</div>` : `<div class="sonar" style="width:200px"><i></i><i></i><i></i><div class="core"></div></div>`}
+        ${url ? `<div class="muted" style="font-size:.8em;word-break:break-all">${esc(url)}</div>` : ""}
+        <div class="joined">${TEAM_IDS.map(id => { const t = team(id), on = Store.online[id] || t.joined; return `<div class="j ${on?"in":""}">${emb(id)}<div><b>${esc(tcfg(id).name)}</b><div class="muted" style="font-size:.78em">${on ? "Ready" : "Waiting…"}</div></div></div>`; }).join("")}</div>
+      </div>
+    </div>`);
+}
+function qrSVG(url){ try { const q = qrcode(0, "M"); q.addData(url); q.make(); return q.createSvgTag({cellSize:5, margin:2, scalable:true}); } catch(e){ return ""; } }
+
+const VIDEOS = {
+  video:{id:"mS-L2fpV1Is", label:"Robot sumo · 2:49", title:"The Freakishly Fast World of Robot Sumo", by:"Great Big Story", watch:"How does a robot find its opponent, and how does it know where the ring ends?"},
+  bonus:{id:"kMOssi5IcP0", label:"Maze robot · 0:39", title:"2019 All Japan micromouse, 1st prize run (7.654 s)", by:"JUING-HUEI", watch:"The robot has never seen this maze. How does it know where the walls are?"}
+};
+function sIntro(stage, s, ctrl){
+  const tab = App.introTab || "video", v = VIDEOS[tab];
+  region(stage, "intro|" + tab, () => `
+    <div style="display:grid;gap:1em">
+      <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap">
+        <div><div class="eyebrow">Ignite</div><h2 class="big" style="font-size:2.4em">Robots that sense the world</h2></div>
+        <span class="seg">${[["video","Robot sumo · 2:49"],["bonus","Maze robot · 0:39"],["film","Sensor film · 1:17"]].map(([k,l]) => `<button class="${tab===k?"on":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</span>
+      </div>
+      ${tab === "film" ? `<div class="film" id="film"><canvas id="filmcv"></canvas>
+        <div class="start" id="filmstart"><button class="btn pri lg" data-act="filmplay">▶ Play the Echo film</button></div>
+        <div class="ctl"><button class="btn sm ghost" data-act="filmtoggle" id="filmtg">❚❚</button><button class="btn sm ghost" data-act="filmrestart">↺</button><div class="prog2"><i id="filmbar"></i></div><button class="btn sm ghost" data-act="sound" id="filmsnd">${Snd.on?"Sound on":"Sound off"}</button></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:1em;flex-wrap:wrap;align-items:center"><div id="filmsub" class="lead" style="font-weight:600;color:var(--fg)"></div><div class="muted">Think while you watch: <b style="color:var(--fg)">where else could a robot use an echo?</b></div></div>`
+      : `<div class="film"><iframe src="https://www.youtube-nocookie.com/embed/${v.id}?rel=0&modestbranding=1&playsinline=1" title="${esc(v.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+      <div style="display:flex;justify-content:space-between;gap:1em;flex-wrap:wrap;align-items:center">
+        <div class="lead" style="font-weight:600;color:var(--fg);max-width:46ch">Watch for: ${esc(v.watch)}</div>
+        <div class="muted" style="font-size:.85em">${esc(v.title)} · ${esc(v.by)} · <a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener" style="color:var(--sonar)">Open on YouTube</a></div>
+      </div>`}
+    </div>`);
+  if (tab === "film" && (!App.film || App.film.cv !== $("#filmcv"))){
+    App.film = new Film($("#filmcv"), $("#filmbar"), $("#filmsub"));
+    App.film.onState = () => { const b = $("#filmtg"); if (b) b.textContent = App.film.playing ? "❚❚" : "▶"; };
+    App.film.onEnd = () => { const b = $("#filmtg"); if (b) b.textContent = "▶"; confetti(1800); };
+  }
+}
+
+function sBrief(stage, s){
+  const key = "brief|" + TEAM_IDS.map(id => JSON.stringify([team(id).roles, team(id).warm])).join("") + "|" + (s.revealWarm?1:0) + JSON.stringify(cfg().teams);
+  region(stage, key, () => `
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Mission brief</div><h2 class="big">Four teams, four missions</h2></div>
+      <div class="panel" style="padding:.8em 1em;max-width:34em"><div class="eyebrow" style="margin-bottom:.4em">Arena code</div>${ARENA_CODE.map((r,i) => `<div>${i+1}. ${esc(r)}</div>`).join("")}</div></div>
+    <div class="grid4">${TEAM_IDS.map(id => { const c = tcfg(id), ch = CH[c.challenge], t = team(id); return `
+      <div class="mcard" style="--tc:${c.color}">
+        <div class="hd">${emb(id)}<div><h3>${esc(c.name)}</h3><div class="muted" style="font-size:.8em">${esc(ch.arena)}</div></div></div>
+        <div style="font-weight:600">${esc(ch.mission)}</div>
+        <div class="tierline">${stagesOf(id).map(x => `<span class="tier ${x}">${x} · ${esc(ch.stages[x].title)}</span>`).join("")}</div>
+        <div class="muted" style="font-size:.85em">Sensors: ${esc(ch.sensors)}</div>
+        <div class="roles">${ROLES.map(r => `<span class="role">${esc(r.name)}: <b>${esc((t.roles||{})[r.id] || "—")}</b></span>`).join("")}</div>
+      </div>`; }).join("")}</div>
+    <div class="grid2">${["maze","sumo"].map(chId => { const w = CH[chId].warm, teams = TEAM_IDS.filter(id => tcfg(id).challenge === chId); if (!teams.length) return "";
+      const votes = w.opts.map((_,i) => teams.filter(id => team(id).warm && team(id).warm.c === i)); const n = Math.max(1, teams.filter(id => team(id).warm).length);
+      return `<div class="panel" style="padding:1em 1.2em;display:grid;gap:.7em"><div class="eyebrow">Warm-up poll · ${esc(CH[chId].arena)}</div><div style="font-size:1.25em;font-weight:600">${esc(w.q)}</div>
+        <div class="poll">${w.opts.map((o,i) => `<div class="opt ${s.revealWarm && i === w.ans ? "right" : ""}"><span class="fill" style="width:${votes[i].length/n*100}%"></span><span>${esc(o)}</span><span class="votes">${votes[i].map(id => emb(id, false, 26)).join("")}</span></div>`).join("")}</div>
+        ${s.revealWarm ? `<div class="msg good">${chId === "maze" ? "A sensing rule works in ANY maze. A memorised list only fits one." : "Safety first: escape the edge, then attack."}</div>` : `<div class="muted" style="font-size:.85em">${CH[chId].mystery}</div>`}</div>`; }).join("")}</div>`);
+}
+
+function laneSteps(id, stage){
+  const stt = stageStatus(id, stage), t = team(id), sd = (t.stages||{})[stage] || {};
+  const order = ["coding","solved","judge","verified"], k = order.indexOf(stt);
+  const tested = sd.check && Object.values(sd.check).filter(Boolean).length >= 3;
+  const on = [k >= 1, k >= 1 && (tested || k >= 2), k >= 2, k >= 3];
+  return `<div class="steps">${on.map((v,i) => `<span class="${v ? "on" : ""} ${i === 2 && stt === "judge" ? "pend" : ""}"></span>`).join("")}</div>`;
+}
+function sLab(stage, s, ctrl){
+  const rc = race();
+  const key = "lab|" + JSON.stringify(TEAM_IDS.map(id => { const t = team(id); return [t.stages, t.judge, t.verified, t.returned]; })) + JSON.stringify(cfg().teams) + "|" + ctrl;
+  region(stage, key, () => `
+    <div class="labgrid">
+      <div style="display:grid;gap:1em">
+        <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Code lab · live race</div><h2 class="big">Crack · Test · Verify</h2></div>
+          <div class="stepnames" style="width:min(26em,100%)"><span>Code cracked</span><span>Robot tested</span><span>Judge called</span><span>Verified</span></div></div>
+        <div class="lanes">${TEAM_IDS.map(id => { const c = tcfg(id), r = rc.find(x => x.id === id), t = team(id);
+          const hints = Object.values(t.stages||{}).reduce((n,sd) => n + (sd.hints||[]).length, 0);
+          return `<div class="lane" style="--tc:${c.color}">
+            <div class="who">${emb(id)}<div style="min-width:0"><b>${esc(c.name)}</b><span class="muted" style="font-size:.8em">${esc(CH[c.challenge].name)}${hints ? ` · ${hints} hint${hints>1?"s":""}` : ""}</span></div></div>
+            <div class="track">${stagesOf(id).map(x => `<div class="stg"><span class="lbl" style="color:var(--${x})">${x}</span>${laneSteps(id, x)}</div>`).join("")}</div>
+            <div class="res">${r.medal && r.finished ? `${medalSVG(r.medal, 44)}<span class="t tnum">${fmt(r.ms)}</span>` : stageStatus(id, currentStage(id)||"gold") === "judge" ? `<span class="chip" style="border-color:var(--signal);color:var(--signal)">Judge!</span>` : `<span class="muted">${r.done}/${r.total}</span>`}</div>
+          </div>`; }).join("")}</div>
+      </div>
+      <div style="display:grid;gap:1em">
+        <div class="panel" style="padding:1em;text-align:center"><div class="eyebrow">Time left</div><div class="bigclock tnum" data-timer>--:--</div></div>
+        <div class="panel" style="padding:1em;display:grid;gap:.6em"><div class="eyebrow">${ctrl ? "Judge queue" : "Calling the judge"}</div><div class="judgeq">${judgeQueue(ctrl) || `<div class="muted" style="font-size:.9em">No team is waiting. When a robot is ready, the team calls the judge from their screen.</div>`}</div></div>
+        <div class="panel" style="padding:1em;display:grid;gap:.6em"><div class="eyebrow">Live feed</div><div class="feed">${feedHTML()}</div></div>
+      </div>
+    </div>`);
+}
+function judgeQueue(ctrl){
+  return TEAM_IDS.filter(id => team(id).judge && team(id).judge.stage).sort((a,b) => team(a).judge.at - team(b).judge.at).map(id => { const j = team(id).judge, c = tcfg(id);
+    return `<div class="jcard"><div style="display:flex;align-items:center;gap:.6em">${emb(id)}<div><b>${esc(c.name)}</b><div class="muted" style="font-size:.8em">${esc(CH[c.challenge].name)} · <span style="color:var(--${j.stage})">${j.stage.toUpperCase()}</span> · ${clock(j.at)}</div></div></div>
+      ${j.log ? `<div class="log">“${esc(j.log)}”</div>` : ""}
+      ${ctrl ? `<div class="checkrow"><button class="btn good sm" data-act="verify" data-team="${id}" data-stage="${j.stage}">✓ Verified</button><button class="btn bad sm" data-act="return" data-team="${id}" data-stage="${j.stage}">Not yet</button></div>` : `<div class="muted" style="font-size:.85em">Judge on the way…</div>`}</div>`; }).join("");
+}
+function feedHTML(){
+  const ev = [];
+  TEAM_IDS.forEach(id => { const t = team(id), n = esc(tcfg(id).name), col = tcfg(id).color;
+    Object.entries(t.stages || {}).forEach(([x, sd]) => { if (sd.solvedAt) ev.push([sd.solvedAt, col, `<b>${n}</b> cracked the ${x} code`]); });
+    Object.entries(t.verified || {}).forEach(([x, v]) => { if (v && v.at) ev.push([v.at, col, `<b>${n}</b> cleared <b style="color:var(--${x})">${x.toUpperCase()}</b> in ${fmt(v.ms)}`]); });
+    if (t.judge && t.judge.stage) ev.push([t.judge.at, col, `<b>${n}</b> called the judge`]);
+    if (t.returned && t.returned.stage) ev.push([t.returned.at, col, `<b>${n}</b>: back to testing (${esc(t.returned.reason)})`]);
+  });
+  ev.sort((a,b) => b[0] - a[0]);
+  return ev.slice(0, 12).map(([ts, col, h]) => `<div class="ev"><span class="dot" style="background:${col}"></span><span style="flex:1">${h}</span><time>${clock(ts)}</time></div>`).join("") || `<div class="muted" style="font-size:.9em">Events appear here as teams crack codes and clear stages.</div>`;
+}
+
+function sCheck(stage, s){
+  const key = "check|" + JSON.stringify(TEAM_IDS.map(id => team(id).rubric));
+  region(stage, key, () => `
+    <div><div class="eyebrow">Self-check</div><h2 class="big">Rate your own project</h2><p class="lead">Each team scores itself on the project rubric. Be honest: you will explain your score when you present.</p></div>
+    <div class="grid4">${TEAM_IDS.map(id => { const c = tcfg(id), r = team(id).rubric; const sc = r ? rubricScore(c.challenge, r.levels) : null; const [band, bc] = sc ? bandOf(sc.score) : ["",""];
+      return `<div class="mcard" style="--tc:${c.color};justify-items:center;text-align:center">${emb(id, true)}<h3>${esc(c.name)}</h3>
+        ${r && r.at ? `<div class="disp" style="font-size:3em;line-height:1">${sc.score}<span class="muted" style="font-size:.4em"> / 10</span></div><span class="band" style="color:${bc}">${band}</span>` : `<div class="muted">${sc && sc.done ? `Scoring… ${sc.done}/8` : "Scoring…"}</div>`}</div>`; }).join("")}</div>`);
+}
+
+function sShare(stage, s, ctrl){
+  const sp = s.spotlight || TEAM_IDS[0], c = tcfg(sp), ch = CH[c.challenge], t = team(sp), r = race().find(x => x.id === sp);
+  const fbs = feedbacks().filter(f => f.to === sp);
+  const key = "share|" + sp + JSON.stringify(fbs) + JSON.stringify([t.stages, t.verified, t.rubric]);
+  const avg = k => fbs.length ? (fbs.reduce((a,f) => a + ((f.stars||{})[k]||0), 0)/fbs.length).toFixed(1) : "–";
+  region(stage, key, () => `
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Share & feedback · team ${TEAM_IDS.indexOf(sp)+1} of 4</div><h2 class="big" style="color:${c.color}">${esc(c.name)} presents</h2></div>
+      <div class="tierline">${TEAM_IDS.map(id => `<span class="chip ${id===sp?"on":""}">${esc(tcfg(id).name)}</span>`).join("")}</div></div>
+    <div class="spot">
+      <div style="display:grid;gap:1em">
+        <div class="mcard" style="--tc:${c.color}"><div class="hd">${emb(sp, true)}<div><h3 style="font-size:1.6em">${esc(ch.name)}</h3><div class="muted">${stagesOf(sp).map(x => `${x}: ${t.verified && t.verified[x] ? "cleared in " + fmt(t.verified[x].ms) : "not cleared"}`).join(" · ")}</div></div>${r && r.medal ? `<div style="margin-left:auto">${medalSVG(r.medal, 70)}</div>` : ""}</div>
+          ${stagesOf(sp).map(x => (t.stages||{})[x] && t.stages[x].log ? `<div><span class="eyebrow">Engineering log · ${x}</span><div style="font-size:1.1em">“${esc(t.stages[x].log)}”</div></div>` : "").join("")}
+        </div>
+        <div class="panel" style="padding:1em 1.2em;display:grid;gap:.6em"><div class="eyebrow">Tell the class</div><ol class="prompts">${ch.prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>
+      </div>
+      <div style="display:grid;gap:.8em;align-content:start">
+        <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["explain","Explained the code"],["challenge","Shared a real challenge"],["team","Teamwork"]].map(([k,l]) => `<div class="panel" style="padding:.7em;text-align:center"><div class="disp" style="font-size:2em;color:var(--gold)">${avg(k)}</div><div class="muted" style="font-size:.75em">${l}</div></div>`).join("")}</div>
+        <div class="eyebrow">Feedback from the other teams (${fbs.length}/3)</div>
+        ${fbs.map(f => `<div class="fbcard" style="--tc:${tcfg(f.from).color}"><div style="display:flex;justify-content:space-between;gap:.5em"><b>${esc(tcfg(f.from).name)}</b><span class="stars">${"★".repeat(Math.round(((f.stars.explain||0)+(f.stars.challenge||0)+(f.stars.team||0))/3))}</span></div>
+          ${f.glow ? `<div><span style="color:var(--ok)">Glow:</span> ${esc(f.glow)}</div>` : ""}${f.grow ? `<div><span style="color:var(--signal)">Grow:</span> ${esc(f.grow)}</div>` : ""}${f.note ? `<div class="muted">“${esc(f.note)}”</div>` : ""}</div>`).join("") || `<div class="muted">Teams are writing feedback on their screens…</div>`}
+      </div>
+    </div>`);
+}
+
+function sQuiz(stage, s, ctrl){
+  const qz = s.quiz || {i:0, open:false, reveal:false}, q = QUIZ[qz.i];
+  const ans = TEAM_IDS.map(id => [id, (team(id).quiz||{})[qz.i]]);
+  const key = "quiz|" + JSON.stringify(qz) + JSON.stringify(ans);
+  region(stage, key, () => `
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Brain check · question ${qz.i+1} of ${QUIZ.length}</div><h2 class="big">Sensor sense</h2></div>
+      <div class="tierline">${ans.map(([id,a]) => `<span class="chip ${a?"on":""}" style="${a?`border-color:${tcfg(id).color};color:${tcfg(id).color}`:""}">${esc(tcfg(id).name)} ${a ? "✓" : "…"}</span>`).join("")}</div></div>
+    ${!qz.open ? `<div class="wait"><div class="sonar" style="width:220px"><i></i><i></i><i></i><div class="core"></div></div><h2>Get ready…</h2></div>` : `
+    <div class="qcard"><div class="qtext">${esc(q.q)}</div>
+      <div class="qopts">${q.o.map((o,i) => { const who = ans.filter(([,a]) => a && a.c === i).map(([id]) => id); const cls = qz.reveal ? (i === q.a ? "right" : "dim") : "";
+        return `<div class="qo ${cls}"><span class="k">${"ABCD"[i]}</span><span>${esc(o)}</span><span class="votes">${qz.reveal ? who.map(id => `<span class="emb" style="--tc:${tcfg(id).color};width:28px;height:28px;font-size:14px;border-radius:8px">${esc(tcfg(id).name[0])}</span>`).join("") : ""}</span></div>`; }).join("")}</div>
+      ${qz.reveal ? `<div class="msg good" style="font-size:1.1em">${esc(q.why)}</div>` : ""}</div>`}`);
+}
+
+function sPodium(stage, s){
+  const rc = race(), pts = TEAM_IDS.map(id => ({id, ...points(id)})).sort((a,b) => b.total - a.total);
+  const key = "podium|" + JSON.stringify(rc) + JSON.stringify(pts) + (s.podiumShown?1:0);
+  const slot = (place, cls) => { const r = rc.find(x => x.place === place); if (!r) return `<div class="pod ${cls} empty"><div class="plinth">${place}</div></div>`; const c = tcfg(r.id);
+    return `<div class="pod ${cls}" style="--tc:${c.color}">${medalSVG(r.medal, place === 1 ? 120 : 88)}<b>${esc(c.name)}</b><span class="muted tnum">${r.finished ? "Finished in " + fmt(r.ms) : r.done + "/" + r.total + " stages"}</span><div class="plinth">${place}</div></div>`; };
+  region(stage, key, () => `
+    <div style="text-align:center"><div class="eyebrow">Mission debrief</div><h2 class="big">The podium</h2></div>
+    ${s.podiumShown ? `<div class="podium">${slot(2,"p2")}${slot(1,"p1")}${slot(3,"p3")}</div>` : `<div class="wait"><div class="sonar" style="width:240px"><i></i><i></i><i></i><div class="core"></div></div><h2>And the medals go to…</h2></div>`}
+    <div class="panel" style="padding:1em 1.2em"><div class="eyebrow" style="margin-bottom:.5em">Arena points</div><div class="tablewrap"><table class="sb"><thead><tr><th>Team</th><th>Mission</th><th>Medal</th><th class="n">Stages</th><th class="n">Brain check</th><th class="n">Feedback</th><th class="n">Hints</th><th class="n">Total</th></tr></thead><tbody>
+      ${pts.map(p => { const c = tcfg(p.id), r = rc.find(x => x.id === p.id); return `<tr><td><span style="display:flex;align-items:center;gap:.5em">${emb(p.id)}<b>${esc(c.name)}</b></span></td><td>${esc(CH[c.challenge].name)}</td><td>${r.medal && s.podiumShown ? medalSVG(r.medal, 34) : "—"}</td><td class="n">${(p.b.silver||0)+(p.b.gold||0)}</td><td class="n">${p.b.quiz||0}</td><td class="n">${p.b.feedback||0}</td><td class="n">${p.b.hints||0}</td><td class="n disp" style="font-size:1.3em">${p.total}</td></tr>`; }).join("")}
+    </tbody></table></div></div>`);
+}
+
+/* ---------- teacher dock ---------- */
+function renderDock(s){
+  const dock = $("#dock"); if (!dock) return;
+  dock.hidden = App.dockHidden; $("#showdock").hidden = !App.dockHidden;
+  const i = phaseIdx(s.phase), t = s.timer || {};
+  let extra = "";
+  if (s.phase === "intro") extra = `<div class="grp"><span class="lab">Watch</span>${[["video","Sumo"],["bonus","Maze"],["film","Film"]].map(([k,l]) => `<button class="btn sm ${(App.introTab||"video")===k?"pri":""}" data-act="introtab" data-v="${k}">${l}</button>`).join("")}</div>`;
+  if (s.phase === "brief") extra = `<div class="grp"><span class="lab">Warm-up</span><button class="btn sm ${s.revealWarm?"pri":""}" data-act="revealWarm">${s.revealWarm?"Hide answer":"Reveal answer"}</button></div>`;
+  if (s.phase === "share") extra = `<div class="grp"><span class="lab">Spotlight</span>${TEAM_IDS.map(id => `<button class="btn sm ${ (s.spotlight||"t1")===id?"pri":""}" data-act="spot" data-team="${id}">${esc(tcfg(id).name)}</button>`).join("")}</div>`;
+  if (s.phase === "quiz"){ const qz = s.quiz || {i:0}; extra = `<div class="grp"><span class="lab">Q${qz.i+1}/${QUIZ.length}</span><button class="btn sm" data-act="qprev" ${qz.i<=0?"disabled":""}>◀</button>${!qz.open ? `<button class="btn sm pri" data-act="qopen">Show question</button>` : !qz.reveal ? `<button class="btn sm warn" data-act="qreveal">Reveal answer</button>` : `<button class="btn sm pri" data-act="qnext" ${qz.i>=QUIZ.length-1?"disabled":""}>Next question ▶</button>`}</div>`; }
+  if (s.phase === "podium") extra = `<div class="grp"><span class="lab">Ceremony</span><button class="btn sm pri" data-act="podium">${s.podiumShown?"Replay":"Reveal podium"}</button><button class="btn sm" data-act="report">Lesson report</button><button class="btn sm" data-act="exits">Exit tickets</button></div>`;
+  const key = JSON.stringify([App.introTab, s.phase, s.revealWarm, s.spotlight, s.quiz, s.podiumShown, t.running, Snd.on, Store.mode, cfg().teams]);
+  region($("#dockin"), key, () => `
+    <div class="grp"><span class="lab">Phase</span><button class="btn sm" data-act="prev" ${i<=0?"disabled":""}>◀</button><b style="min-width:8.5em;text-align:center">${esc(PHASES[i].name)}</b><button class="btn sm pri" data-act="next" ${i>=PHASES.length-1?"disabled":""}>Next ▶</button></div>
+    <div class="grp"><span class="lab">Lab clock</span>${t.running ? `<button class="btn sm warn" data-act="tpause">❚❚ Pause</button>` : `<button class="btn sm good" data-act="tstart">▶ ${labStarted()?"Resume":"Start"}</button>`}<button class="btn sm" data-act="tadd" data-min="1">+1</button><button class="btn sm" data-act="tadd" data-min="-1">−1</button><button class="btn sm ghost" data-act="treset">Reset</button></div>
+    ${extra}
+    <div class="grp"><button class="btn sm" data-act="teams">Teams</button><button class="btn sm" data-act="setup">Setup</button><button class="btn sm" data-act="sound">${Snd.on?"🔊":"🔇"}</button><button class="btn sm ghost" data-act="dock" title="Presenter mode (H)">Hide</button></div>`);
+}
+
+/* ---------- team view ---------- */
+function renderTeam(app){
+  const id = App.teamId, s = st(), c = tcfg(id), t = team(id);
+  if (!s){ region(app, "tNo", () => `<div class="wrap"><div class="wait"><div class="sonar"><i></i><i></i><i></i><div class="core"></div></div><h2>Mission Control is offline</h2><p class="muted">Your teacher will open the arena in a moment.</p><button class="btn ghost sm" data-act="leave">Change team</button></div></div>`); return; }
+  if (!t.joined && Store.canWrite) Store.update("teams/" + id, {session: s.session, joined: true, joinedAt: Date.now()});
+  const p = points(id);
+  region(app, "tShell|" + id + JSON.stringify(c), () => `
+    <div class="bar wrap"><div class="logo">${logoMark}<div><b>ECHO ARENA</b><small>${esc(CH[c.challenge].arena)}</small></div></div><div class="grow"></div><span class="pts tnum" id="tpts"></span><div class="timer tnum" data-timer>--:--</div></div>
+    <div class="wrap"><div class="tv">
+      <div class="tvhead" style="--tc:${c.color}">${emb(id, true)}<div><div class="eyebrow">Team</div><h1>${esc(c.name)}</h1></div><div class="grow"></div><div class="tierline">${stagesOf(id).map(x => `<span class="tier ${x}">${x}</span>`).join("")}</div></div>
+      <div id="netbanner"></div>
+      <div id="tbody"></div>
+    </div></div>`);
+  $("#tpts").textContent = p.total + " pts";
+  region($("#netbanner"), "nb" + (Store.mode === "server" && !Store.live), () => Store.mode === "server" && !Store.live ? `<div class="banner">Reconnecting to the arena… your answers are saved and will send automatically.</div>` : "");
+  const body = $("#tbody");
+  ({lobby:tLobby, intro:tIntro, brief:tBrief, lab:tLab, check:tCheck, share:tShare, quiz:tQuiz, podium:tPodium})[s.phase](body, id, s);
+  Store.presence({kind:"team", team:id});
+  watchTeamEvents(id);
+}
+
+function tLobby(body, id, s){
+  const t = team(id), roles = t.roles || {};
+  region(body, "tl|" + id, () => `
+    <div class="labcols">
+      <div class="panel box"><h3>Who does what?</h3><p class="muted" style="margin:0">Give every member a role. Type first names (two people can share a role).</p>
+        ${ROLES.map(r => `<label class="fld"><span><b style="color:var(--fg)">${esc(r.name)}</b> · ${esc(r.job)}</span><input type="text" id="role-${r.id}" data-role="${r.id}" maxlength="40" value="${esc(roles[r.id] || "")}" placeholder="Name"></label>`).join("")}
+      </div>
+      <div class="panel box"><h3>Arena code</h3>${ARENA_CODE.map((r,i) => `<div class="msg">${i+1}. ${esc(r)}</div>`).join("")}<div class="muted">Watch the big screen. The mission starts soon.</div><button class="btn ghost sm" data-act="leave">Change team</button></div>
+    </div>`);
+}
+function tIntro(body){ region(body, "ti", () => `<div class="wait"><div class="sonar"><i></i><i></i><i></i><div class="core"></div></div><h2>Eyes on the big screen</h2><p class="muted">Watch for: how does a robot find its opponent, and how does it know where the edge is?</p></div>`); }
+function tBrief(body, id, s){
+  const c = tcfg(id), ch = CH[c.challenge], t = team(id), w = ch.warm;
+  region(body, "tb|" + JSON.stringify(t.warm) + (s.revealWarm?1:0) + JSON.stringify(t.roles), () => `
+    <div class="labcols">
+      <div class="panel box"><div class="eyebrow">Your mission</div><h3 style="font-size:22px">${esc(ch.mission)}</h3>
+        ${stagesOf(id).map(x => `<div class="msg"><span class="tier ${x}">${x}</span> <b>${esc(ch.stages[x].title)}</b><div class="muted" style="margin-top:4px">${esc(ch.stages[x].goal)}</div><ul style="margin:.4em 0 0;padding-left:1.2em">${ch.stages[x].criteria.map(k => `<li>${esc(k)}</li>`).join("")}</ul></div>`).join("")}
+        <div class="muted">Sensors: ${esc(ch.sensors)}</div>
+        <div><div class="eyebrow">Where robots like this work</div><ul style="margin:.3em 0 0;padding-left:1.2em">${ch.real.map(r => `<li>${esc(r)}</li>`).join("")}</ul></div>
+      </div>
+      <div class="panel box"><div class="eyebrow">Warm-up poll · agree as a team</div><h3 style="font-size:19px">${esc(w.q)}</h3>
+        <div class="ticks">${w.opts.map((o,i) => { const pick = t.warm && t.warm.c === i; const cls = s.revealWarm ? (i === w.ans ? "on" : "") : pick ? "on" : ""; return `<button class="tick ${cls}" data-act="warm" data-i="${i}" ${t.warm ? "disabled" : ""}><span class="bx">${pick ? "✓" : ""}</span><span>${esc(o)}</span></button>`; }).join("")}</div>
+        ${t.warm ? (s.revealWarm ? (t.warm.c === w.ans ? `<div class="msg good">Correct! +${PTS.warm} points</div>` : `<div class="msg warn">Not quite. Look at the green answer and discuss why.</div>`) : `<div class="msg">Answer locked. Watch the big screen for the reveal.</div>`) : ""}
+        <div class="muted">${esc(ch.mystery)}</div>
+      </div>
+    </div>`);
+}
+
+function tLab(body, id, s){
+  const stage = currentStage(id);
+  if (!stage){ const r = race().find(x => x.id === id); region(body, "tdone|" + (r.medal||""), () => `<div class="wait">${r.medal ? medalSVG(r.medal, 200) : ""}<h2>Mission complete!</h2><p class="muted">Finished in ${fmt(r.ms)}. Prepare your presentation: how did you program the robot, and what was hard?</p></div>`); return; }
+  const c = tcfg(id), t = team(id), sd = (t.stages||{})[stage] || {}, pz = PUZZLES[c.challenge][stage];
+  const stt = stageStatus(id, stage), dk = id + stage;
+  if (!App.draft[dk]) App.draft[dk] = {...(sd.answers || {})};
+  const answers = App.draft[dk];
+  const total = Object.keys(pz.slots).length, filled = Object.keys(answers).length;
+  const step = stt === "coding" ? 0 : stt === "solved" ? ((App.local["sim"+dk] || sd.check || sd.log || (t.returned && t.returned.stage === stage)) ? 2 : 1) : 3;
+  if (App.draft["log"+dk] == null) App.draft["log"+dk] = sd.log || "";
+  const locked = !labStarted() || timeUp();
+  const key = "tlab|" + stage + "|" + stt + "|" + step + "|" + JSON.stringify(sd.hints||[]) + "|" + (sd.attempts||0) + "|" + JSON.stringify(t.returned) + "|" + locked + "|" + (App.local["lastCheck"+dk]||"") + "|" + JSON.stringify(sd.check||{});
+  region(body, key, () => `
+    <div class="stepper">${["Crack the code","Run the simulator","Build & test the robot","Call the judge"].map((n,i) => `<div class="s ${i<step?"done":""} ${i===step?"cur":""}"><small>${i<step?"Done":"Step "+(i+1)}</small><b>${n}</b></div>`).join("")}</div>
+    ${!labStarted() ? `<div class="banner">The lab clock hasn't started. Read the code together while you wait.</div>` : timeUp() ? `<div class="banner" style="border-color:var(--bad);color:var(--bad)">Time is up! Hands off the robot.</div>` : ""}
+    <div class="labcols">
+      <div style="display:grid;gap:14px;min-width:0">
+        <div class="panel box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><span class="tier ${stage}">${stage}</span> <b style="font-size:18px">${esc(CH[c.challenge].stages[stage].title)}</b></div><span class="muted" id="fillcount">${stt === "coding" ? `${filled}/${total} blanks filled` : "Code cracked ✓"}</span></div>
+          <div class="prog" id="prog">${rNodes(pz.prog, {slots:pz.slots, answers, hints:sd.hints, solved: stt !== "coding", locked})}</div>
+          ${stt === "coding" ? `<div class="checkrow"><button class="btn pri" data-act="check" ${locked?"disabled":""}>Check our code</button><button class="btn" data-act="hint" ${!(sd.attempts>0) || locked ? "disabled" : ""}>Get a hint (${PTS.hint} pts)</button><span class="muted" style="font-size:13px">Attempts: ${sd.attempts||0}</span></div>
+            <div id="checkmsg">${App.local["lastCheck"+dk] || ""}</div>
+            ${(sd.hints||[]).map(h => `<div class="msg warn"><b>Hint:</b> ${esc(pz.slots[h].hint)}</div>`).join("")}` : ""}
+        </div>
+        ${step >= 1 ? `<div class="panel box sim"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3>Simulator · your program on a virtual mBot2</h3><div class="simbar"><button class="btn sm pri" data-act="simrun">▶ Run</button><button class="btn sm" data-act="simreset">↺</button><button class="btn sm ghost" data-act="simspeed">×2</button></div></div>
+          <canvas id="simcv"></canvas><div class="simlog" id="simlog"></div>
+          ${step === 1 ? `<button class="btn good" data-act="simdone">Our robot logic works → build it for real</button>` : ""}</div>` : ""}
+      </div>
+      <div style="display:grid;gap:14px;min-width:0">
+        ${step >= 2 ? `<div class="panel box"><h3>Build & test on the real mBot2</h3>
+          <div class="ticks">${["Built the script in mBlock 5 and uploaded it","Tested the robot on the real course","Changed at least one number to tune it"].map((k,i) => { const on = (sd.check||{})["c"+i]; return `<button class="tick ${on?"on":""}" data-act="ctick" data-i="${i}" ${stt==="judge"?"disabled":""}><span class="bx">${on?"✓":""}</span><span>${k}</span></button>`; }).join("")}</div>
+          <label class="fld">Engineering log: one number we changed, and why<textarea id="englog-${stage}" maxlength="240" placeholder="e.g. We changed 20 to 25 because the robot stopped too close to the wall." ${stt==="judge"?"disabled":""}>${esc(App.draft["log"+dk])}</textarea></label>
+          ${t.returned && t.returned.stage === stage ? `<div class="msg bad">Judge: not yet. ${esc(t.returned.reason)}. Fix it and call again.</div>` : ""}
+          ${stt === "judge" ? `<div class="msg warn">The judge is coming. Get the robot to the start line!</div>` : `<button class="btn warn lg" data-act="calljudge" ${locked?"disabled":""}>Call the judge</button>`}
+        </div>` : `<div class="panel box"><h3>How to crack it</h3><ol style="margin:0;padding-left:1.2em;display:grid;gap:6px"><li>Read the whole program aloud together.</li><li>Tap a <b>?</b> blank and agree on the missing piece.</li><li>Check your code. You'll see how many blanks are right.</li><li>Stuck? A hint shows one wrong blank and a clue.</li></ol></div>`}
+        <div class="panel box"><h3>Engineer's toolkit</h3>${CH[c.challenge].tune.map(([a,b]) => `<div style="font-size:13px"><b>${esc(a)}</b><div class="muted">${esc(b)}</div></div>`).join("")}</div>
+        <div class="panel box"><h3>The race</h3><div class="minirace" id="minirace"></div></div>
+      </div>
+    </div>`);
+  // mini race (cheap, always refresh)
+  const mr = $("#minirace"); if (mr) mr.innerHTML = TEAM_IDS.map(x => { const tc = tcfg(x), stg = stagesOf(x); const prog = stg.reduce((a, y) => a + ({coding:0, solved:.4, judge:.75, verified:1}[stageStatus(x,y)]), 0) / stg.length; const rr = race().find(q => q.id === x);
+    return `<div class="r" style="--tc:${tc.color}">${emb(x, false, 24)}<div class="bar2"><i style="width:${prog*100}%"></i></div><span>${rr.medal && rr.finished ? medalSVG(rr.medal, 22) : Math.round(prog*100) + "%"}</span></div>`; }).join("");
+  // simulator
+  const cv = $("#simcv");
+  if (cv && (!App.sims.cur || App.sims.cur.cv !== cv)){
+    if (App.sims.cur) App.sims.cur.stop();
+    App.sims.cur = c.challenge === "maze" ? new MazeSim(cv, stage, $("#simlog")) : new SumoSim(cv, stage, $("#simlog"));
+    if (step === 1 && !App.local["autorun"+dk]){ App.local["autorun"+dk] = 1; setTimeout(() => App.sims.cur && App.sims.cur.run(), 500); }
+  }
+}
+
+function tCheck(body, id, s){
+  const c = tcfg(id), t = team(id), crit = rubricFor(c.challenge);
+  const dk = "rub" + id; if (!App.draft[dk]) App.draft[dk] = clone(t.rubric || {levels:{}, ican:{}});
+  const d = App.draft[dk], sc = rubricScore(c.challenge, d.levels), [band, bc] = bandOf(sc.score);
+  const doneStages = stagesOf(id).filter(x => stageStatus(id, x) === "verified");
+  const suggest = doneStages.includes("gold") ? 4 : doneStages.length ? 3 : 2;
+  region(body, "tc|" + JSON.stringify(d) + (t.rubric && t.rubric.at ? 1 : 0), () => `
+    <div class="labcols">
+      <div class="rub">
+        <div class="panel box"><h3>Project rubric · ${esc(CH[c.challenge].name)}</h3><p class="muted" style="margin:0">Choose the level that matches your team for each row. Your score adds up automatically.</p></div>
+        ${crit.map(k => `<div class="crit"><div class="ch"><b>${esc(k.name)}</b><span class="muted tnum">${d.levels[k.id] ? (k.max*LEVEL_FACTOR[d.levels[k.id]-1]) : "–"} / ${k.max}</span></div>
+          ${k.id === "func" ? `<div class="muted" style="font-size:12px">Your mission record suggests level ${suggest}.</div>` : ""}
+          <div class="levels">${[4,3,2,1].map(l => `<button class="lev ${d.levels[k.id]===l?"on":""}" data-act="lev" data-c="${k.id}" data-l="${l}"><b>${LEVEL_NAMES[l-1]}</b>${esc(k.lv[l-1])}</button>`).join("")}</div></div>`).join("")}
+        <div class="panel box"><h3>“I can…” checklist</h3><div class="ican">${RUBRIC.ican[c.challenge].map((q,i) => `<div class="row"><span>${esc(q)}</span><span class="seg">${[["yes","On my own"],["help","With help"],["not","Not yet"]].map(([v,l]) => `<button class="${d.ican[i]===v?"on":""}" data-act="ican" data-i="${i}" data-v="${v}">${l}</button>`).join("")}</span></div>`).join("")}</div></div>
+      </div>
+      <div class="panel scorecard"><div class="eyebrow">Our score</div><div class="n tnum">${sc.score}</div><div class="muted">out of 10 · ${sc.done}/${sc.total} rows</div>${sc.done ? `<span class="band" style="color:${bc}">${band}</span>` : ""}
+        <div class="muted" style="font-size:12px">9–10 Exceeding · 7–8 Meeting · 5–6 Approaching · ≤4 Beginning</div>
+        <button class="btn pri" data-act="rubsubmit" ${sc.done < sc.total ? "disabled" : ""}>${t.rubric && t.rubric.at ? "Update our score" : "Submit our score"}</button>
+        ${t.rubric && t.rubric.at ? `<div class="msg good">Submitted · +${PTS.check} pts</div>` : ""}</div>
+    </div>`);
+}
+
+function tShare(body, id, s){
+  const sp = s.spotlight || "t1", c = tcfg(id);
+  if (sp === id){
+    const ch = CH[c.challenge], t = team(id);
+    region(body, "tsme|" + sp, () => `<div class="labcols"><div class="panel box"><div class="eyebrow">You're presenting!</div><h3 style="font-size:24px">Tell the class</h3><ol class="prompts">${ch.prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>
+      <div class="panel box"><h3>Your notes</h3>${stagesOf(id).map(x => `<div class="msg"><span class="tier ${x}">${x}</span> ${t.verified && t.verified[x] ? "cleared in " + fmt(t.verified[x].ms) : "not cleared yet"}${(t.stages||{})[x] && t.stages[x].log ? `<div style="margin-top:4px">“${esc(t.stages[x].log)}”</div>` : ""}</div>`).join("")}<div class="muted">The Reporter leads; everyone adds one sentence.</div></div></div>`);
+    return;
+  }
+  const fid = "feedback/" + id + "__" + sp, ex = Store.get(fid), dk = "fb" + sp;
+  if (!App.draft[dk]) App.draft[dk] = ex && ex.session === s.session ? clone(ex) : {stars:{}, glow:"", grow:"", note:""};
+  const d = App.draft[dk], sent = ex && ex.session === s.session, spc = tcfg(sp);
+  region(body, "tsfb|" + sp + JSON.stringify(d) + (sent?1:0), () => `
+    <div class="labcols"><div class="panel box" style="--tc:${spc.color}"><div class="eyebrow">Feedback for</div><div style="display:flex;align-items:center;gap:12px">${emb(sp, true)}<h3 style="font-size:26px;color:${spc.color}">${esc(spc.name)}</h3></div>
+      ${[["explain","They explained the code"],["challenge","They shared a real challenge"],["team","Everyone took part"]].map(([k,l]) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>${l}</span><span class="starpick">${[1,2,3,4,5].map(n => `<button class="${(d.stars[k]||0)>=n?"on":""}" data-act="star" data-k="${k}" data-n="${n}" aria-label="${n} stars">★</button>`).join("")}</span></div>`).join("")}
+      <div><div class="eyebrow" style="color:var(--ok)">Glow · one thing they did well</div><div class="chips" style="margin-top:6px">${GLOW.map(g => `<button class="${d.glow===g?"on":""}" data-act="glow" data-v="${esc(g)}">${esc(g)}</button>`).join("")}</div></div>
+      <div><div class="eyebrow" style="color:var(--signal)">Grow · one suggestion</div><div class="chips" style="margin-top:6px">${GROW.map(g => `<button class="${d.grow===g?"on":""}" data-act="grow" data-v="${esc(g)}">${esc(g)}</button>`).join("")}</div></div>
+      <label class="fld">A question or comment (optional)<input type="text" id="fbnote-${sp}" maxlength="120" value="${esc(d.note||"")}"></label>
+      <button class="btn pri" data-act="fbsend" ${Object.keys(d.stars).length < 3 || !d.glow || !d.grow ? "disabled" : ""}>${sent ? "Update feedback" : "Send feedback"}</button>${sent ? `<div class="msg good">Sent! It's on the big screen. +${PTS.feedback} pts</div>` : ""}</div>
+      <div class="panel box"><h3>Listen for…</h3><ol class="prompts" style="font-size:14px">${CH[spc.challenge].prompts.map(p => `<li>${esc(p)}</li>`).join("")}</ol></div></div>`);
+}
+
+function tQuiz(body, id, s){
+  const qz = s.quiz || {i:0}, q = QUIZ[qz.i], a = (team(id).quiz||{})[qz.i];
+  region(body, "tq|" + JSON.stringify(qz) + JSON.stringify(a), () => !qz.open ? `<div class="wait"><div class="sonar"><i></i><i></i><i></i><div class="core"></div></div><h2>Question ${qz.i+1} is coming…</h2></div>` : `
+    <div class="panel box"><div class="eyebrow">Brain check · ${qz.i+1} of ${QUIZ.length} · agree as a team</div><h3 style="font-size:22px;line-height:1.3">${esc(q.q)}</h3>
+      <div class="qopts" style="font-size:14px">${q.o.map((o,i) => { let cls = a && a.c === i ? "pick" : ""; if (qz.reveal) cls = i === q.a ? "right" : (a && a.c === i ? "wrong" : "dim"); return `<button class="qo ${cls}" data-act="qans" data-i="${i}" ${a || qz.reveal ? "disabled" : ""}><span class="k">${"ABCD"[i]}</span><span>${esc(o)}</span><span></span></button>`; }).join("")}</div>
+      ${qz.reveal ? (a && a.c === q.a ? `<div class="msg good">Correct! +${PTS.quiz} · ${esc(q.why)}</div>` : `<div class="msg warn">${esc(q.why)}</div>`) : a ? `<div class="msg">Locked in. Wait for the reveal…</div>` : ""}</div>`);
+}
+
+function tPodium(body, id, s){
+  const c = tcfg(id), r = race().find(x => x.id === id), p = points(id), t = team(id), ex = CH[c.challenge].exit;
+  if (!App.draft["exit"+id]) App.draft["exit"+id] = clone(t.exit || {});
+  const d = App.draft["exit"+id];
+  region(body, "tp|" + (s.podiumShown?1:0) + JSON.stringify(t.exit||{}) + (r.medal||""), () => `
+    <div class="labcols"><div class="panel box" style="justify-items:center;text-align:center">${s.podiumShown && r.medal ? medalSVG(r.medal, 180) : `<div class="sonar" style="width:180px"><i></i><i></i><i></i><div class="core"></div></div>`}
+      <h3 style="font-size:24px">${s.podiumShown ? (r.medal ? ({gold:"Gold medal!",silver:"Silver medal!",bronze:"Bronze medal!",finisher:"Finisher badge!"})[r.medal] : "Great effort!") : "Watch the big screen…"}</h3>
+      <div class="pts">${p.total} arena points</div></div>
+      <div class="panel box"><div class="eyebrow">Exit ticket · answer as a team</div>
+        ${ex.map((q,i) => `<label class="fld"><span style="color:var(--fg)">${esc(q)}</span><textarea id="exit-${id}-${i}" data-exit="${i}" maxlength="300">${esc(d["a"+i]||"")}</textarea></label>`).join("")}
+        <button class="btn pri" data-act="exitsend">${t.exit && t.exit.at ? "Update" : "Send to teacher"}</button>${t.exit && t.exit.at ? `<div class="msg good">Sent. Thank you, engineers!</div>` : ""}</div></div>`);
+}
+
+/* ---------------- Events, ceremonies ---------------- */
+function watchEvents(s){
+  const fin = race().filter(r => r.finished).map(r => r.id);
+  const ver = []; TEAM_IDS.forEach(id => Object.keys(team(id).verified || {}).forEach(x => ver.push(id + x)));
+  const jd = TEAM_IDS.filter(id => team(id).judge && team(id).judge.stage).map(id => id + team(id).judge.stage + team(id).judge.at);
+  if (App.seenFinish === null || Date.now() - (App.bootAt||0) < 2500){ App.seenFinish = fin; App.seenVerify = ver; App.seenJudge = jd; return; }
+  fin.filter(id => !App.seenFinish.includes(id)).forEach(id => ceremony(id));
+  ver.filter(v => !App.seenVerify.includes(v) && !fin.includes(v.slice(0,2))).forEach(v => { const id = v.slice(0,2); toast(`${emb(id)}<span><b>${esc(tcfg(id).name)}</b> cleared <b style="color:var(--${v.slice(2)})">${v.slice(2).toUpperCase()}</b>!</span>`, tcfg(id).color); Snd.good(); });
+  jd.filter(j => !App.seenJudge.includes(j)).forEach(j => { const id = j.slice(0,2); toast(`${emb(id)}<span><b>${esc(tcfg(id).name)}</b> called the judge</span>`, "var(--signal)"); Snd.judge(); });
+  App.seenFinish = fin; App.seenVerify = ver; App.seenJudge = jd;
+}
+function watchTeamEvents(id){
+  const r = race().find(x => x.id === id), fin = r.finished ? [id] : [];
+  const t = team(id), ver = Object.keys(t.verified || {}), ret = t.returned && t.returned.stage ? [String(t.returned.at)] : [];
+  if (App.seenFinish === null || Date.now() - (App.bootAt||0) < 2500){ App.seenFinish = fin; App.seenVerify = ver; App.seenJudge = ret; return; }
+  if (fin.length && !App.seenFinish.length) ceremony(id);
+  else ver.filter(v => !App.seenVerify.includes(v)).forEach(v => { toast(`<b>${v.toUpperCase()} cleared!</b>&nbsp;Next stage unlocked.`, "var(--ok)"); Snd.good(); confetti(1500); });
+  ret.filter(x => !App.seenJudge.includes(x)).forEach(() => { toast(`Judge: not yet. ${esc(t.returned.reason)}`, "var(--bad)"); Snd.bad(); });
+  App.seenFinish = fin; App.seenVerify = ver; App.seenJudge = ret;
+}
+function ceremony(id){
+  const r = race().find(x => x.id === id), c = tcfg(id); if (!r || !r.medal) return;
+  const title = {gold:"GOLD", silver:"SILVER", bronze:"BRONZE", finisher:"FINISHER"}[r.medal];
+  overlay(`<div class="cere" style="--tc:${c.color}">${medalSVG(r.medal, 260)}<div class="eyebrow">Mission complete · place ${r.place}</div><h2 style="color:var(--${r.medal === "finisher" ? "sonar" : r.medal})">${title}</h2><div class="disp" style="font-size:clamp(28px,4vw,48px);color:${c.color}">${esc(c.name)}</div><div class="mono tnum" style="font-size:22px">${fmt(r.ms)}</div><button class="btn ghost" onclick="closeOverlay()">Continue</button></div>`);
+  Snd.fanfare(); confetti(4200); setTimeout(() => { const o = $("#ov"); if (o && o.querySelector(".cere")) closeOverlay(); }, 9000);
+}
+
+/* ---------------- Actions ---------------- */
+function setState(patch){ return Store.update("arena/state", patch); }
+function newSession(){
+  const sid = "s" + Date.now().toString(36);
+  const c = cfg();
+  Store.set("arena/state", {session:sid, phase:"lobby", timer:{running:false, acc:0, startedAt:0, dur:c.labMin*60000}, quiz:{i:0, open:false, reveal:false}, spotlight:"t1", revealWarm:false, podiumShown:false, createdAt:Date.now()});
+  TEAM_IDS.forEach(id => Store.set("teams/" + id, {session:sid}));
+  Object.keys(Store.all()).filter(k => k.startsWith("feedback/")).forEach(k => Store.del(k));
+  App.draft = {}; App.local = {}; App.seenFinish = null;
+}
+function bootControl(){
+  if (!st()){ const c = lsGet("echoArena.cache"); if (Store.mode === "server" && c && c["arena/state"]) Object.keys(c).forEach(k => Store.set(k, c[k])); else newSession(); }
+  if (!Store.get("arena/config")) Store.set("arena/config", clone(DEFAULT_CONFIG));
+  Store.presence({kind:"control"});
+}
+function goPhase(dir){
+  const s = st(), i = Math.max(0, Math.min(PHASES.length-1, phaseIdx(s.phase) + dir)), ph = PHASES[i].id;
+  const patch = {phase: ph};
+  if (ph === "lab" && !labStarted()) patch.timer = {running:true, startedAt:Date.now(), acc:0, dur:(s.timer && s.timer.dur) || cfg().labMin*60000};
+  if (s.phase === "lab" && ph !== "lab" && s.timer && s.timer.running) patch.timer = {running:false, acc: elapsedMs(s.timer), startedAt:0};
+  if (ph !== "intro" && App.film){ App.film.pause(); App.film.stopVoice(); }
+  setState(patch); Snd.click();
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+  const a = b.dataset.act, s = st();
+  const T = App.teamId, tp = "teams/" + T;
+  switch (a){
+    case "pick": lsSet("echoArena.team", b.dataset.team); App.teamId = b.dataset.team; App.view = "team"; App.seenFinish = null; Snd.ping(); render(); break;
+    case "leave": lsSet("echoArena.team", null); App.view = "landing"; App.teamId = null; location.hash = ""; render(); break;
+    case "dock": App.dockHidden = !App.dockHidden; render(); break;
+    case "next": goPhase(1); break;
+    case "prev": goPhase(-1); break;
+    case "tstart": setState({timer:{running:true, startedAt:Date.now(), acc:(s.timer||{}).acc||0, dur:(s.timer||{}).dur || cfg().labMin*60000}}); break;
+    case "tpause": setState({timer:{running:false, acc:elapsedMs(s.timer), startedAt:0}}); break;
+    case "tadd": setState({timer:{dur: Math.max(60000, ((s.timer||{}).dur || cfg().labMin*60000) + (+b.dataset.min)*60000)}}); break;
+    case "treset": overlay(`<div class="panel card"><h3>Reset the lab clock?</h3><p class="muted">The clock goes back to ${cfg().labMin}:00 and stops. Team progress is kept.</p><div class="checkrow"><button class="btn warn" data-act="treset2">Reset clock</button><button class="btn ghost" onclick="closeOverlay()">Cancel</button></div></div>`); break;
+    case "treset2": setState({timer:{running:false, acc:0, startedAt:0, dur:cfg().labMin*60000}}); closeOverlay(); break;
+    case "revealWarm": setState({revealWarm: !s.revealWarm}); break;
+    case "spot": setState({spotlight: b.dataset.team}); break;
+    case "qopen": setState({quiz:{open:true, reveal:false, at:Date.now()}}); Snd.ping(); break;
+    case "qreveal": setState({quiz:{reveal:true}}); Snd.good(); break;
+    case "qnext": setState({quiz:{i:Math.min(QUIZ.length-1, (s.quiz||{}).i+1), open:false, reveal:false}}); break;
+    case "qprev": setState({quiz:{i:Math.max(0, (s.quiz||{}).i-1), open:true, reveal:true}}); break;
+    case "podium": setState({podiumShown:true}); Snd.fanfare(); confetti(5000); break;
+    case "sound": Snd.on = !Snd.on; if (!Snd.on) try { speechSynthesis.cancel(); } catch(e){} render(); { const fs = $("#filmsnd"); if (fs) fs.textContent = Snd.on ? "Sound on" : "Sound off"; } break;
+    case "introtab": App.introTab = b.dataset.v; if (App.film){ App.film.pause(); App.film.stopVoice(); } App.film = null; render(); break;
+    case "filmplay": { const st0 = $("#filmstart"); if (st0) st0.hidden = true; if (App.film){ if (App.film.t > 0 && !App.film.playing) App.film.resume(); else App.film.play(); } break; }
+    case "filmtoggle": if (App.film){ const st0 = $("#filmstart"); if (st0) st0.hidden = true; App.film.playing ? App.film.pause() : App.film.resume(); } break;
+    case "filmrestart": if (App.film){ const st0 = $("#filmstart"); if (st0) st0.hidden = true; App.film.restart(); } break;
+    case "verify": { const id = b.dataset.team, x = b.dataset.stage; Store.update("teams/" + id, {verified:{[x]:{at:Date.now(), ms:elapsedMs(s.timer)}}, judge:{stage:null}, returned:{stage:null}}); break; }
+    case "return": { const id = b.dataset.team, x = b.dataset.stage;
+      overlay(`<div class="panel card"><h3>Send ${esc(tcfg(id).name)} back to testing</h3><p class="muted">What did you see?</p><div class="chips">${RETURN_REASONS.map(r => `<button data-act="return2" data-team="${id}" data-stage="${x}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div><button class="btn ghost" onclick="closeOverlay()">Cancel</button></div>`); break; }
+    case "return2": Store.update("teams/" + b.dataset.team, {judge:{stage:null}, returned:{stage:b.dataset.stage, reason:b.dataset.r, at:Date.now()}}); closeOverlay(); break;
+    case "teams": openTeamsPanel(); break;
+    case "setup": openSetup(); break;
+    case "report": makeReport(); break;
+    case "exits": openExits(); break;
+    case "reset": overlay(`<div class="panel card"><h3>Start a new class?</h3><p class="muted">This clears every team's progress, answers, feedback and scores, and returns to the lobby. Team names and setup are kept.</p><div class="checkrow"><button class="btn bad" data-act="reset2">Yes, start fresh</button><button class="btn ghost" onclick="closeOverlay()">Cancel</button></div></div>`); break;
+    case "reset2": newSession(); closeOverlay(); toast("New class started. Teams can join."); break;
+    case "bonus": { const id = b.dataset.team; Store.update("teams/" + id, {bonus: (team(id).bonus || 0) + (+b.dataset.n)}); setTimeout(openTeamsPanel, 50); break; }
+    case "mverify": { const id = b.dataset.team, x = b.dataset.stage; Store.update("teams/" + id, {verified:{[x]:{at:Date.now(), ms:elapsedMs(s.timer)}}, judge:{stage:null}, stages:{[x]:{solvedAt:(team(id).stages||{})[x]?.solvedAt || Date.now()}}}); setTimeout(openTeamsPanel, 50); break; }
+    case "munverify": { const id = b.dataset.team, x = b.dataset.stage; const v = clone(team(id).verified || {}); delete v[x]; const full = clone(team(id)); full.verified = v; Store.set("teams/" + id, full); App.seenFinish = null; setTimeout(openTeamsPanel, 50); break; }
+    /* team actions */
+    case "warm": Store.update(tp, {warm:{c:+b.dataset.i, at:Date.now()}}); Snd.click(); break;
+    case "slot": { const id = T, stage = currentStage(id), pz = PUZZLES[tcfg(id).challenge][stage], dk = id + stage;
+      slotPopover(b, pz.slots[b.dataset.slot], i => { App.draft[dk][b.dataset.slot] = i; Snd.click(); const p = $("#prog"); if (p){ const sd = (team(id).stages||{})[stage] || {}; p.innerHTML = rNodes(pz.prog, {slots:pz.slots, answers:App.draft[dk], hints:sd.hints, solved:false}); } const fc = $("#fillcount"); if (fc) fc.textContent = `${Object.keys(App.draft[dk]).length}/${Object.keys(pz.slots).length} blanks filled`; }); break; }
+    case "check": { const id = T, stage = currentStage(id), pz = PUZZLES[tcfg(id).challenge][stage], dk = id + stage, ans = App.draft[dk] || {};
+      const keys = Object.keys(pz.slots), right = keys.filter(k => ans[k] === pz.slots[k].ans).length, sd = (team(id).stages||{})[stage] || {};
+      if (Object.keys(ans).length < keys.length){ App.local["lastCheck"+dk] = `<div class="msg warn">Fill every blank first (${Object.keys(ans).length}/${keys.length}).</div>`; render(); break; }
+      if (right === keys.length){ Store.update(tp, {stages:{[stage]:{answers:ans, attempts:(sd.attempts||0)+1, solvedAt:Date.now()}}}); Snd.good(); confetti(1600); App.local["lastCheck"+dk] = ""; }
+      else { Store.update(tp, {stages:{[stage]:{answers:ans, attempts:(sd.attempts||0)+1}}}); Snd.bad(); App.local["lastCheck"+dk] = `<div class="msg bad"><b>${right} of ${keys.length}</b> blanks are right. Talk it through: which ${keys.length-right} could be wrong? Read the program aloud.</div>`; }
+      break; }
+    case "hint": { const id = T, stage = currentStage(id), pz = PUZZLES[tcfg(id).challenge][stage], dk = id + stage, ans = App.draft[dk] || {}, sd = (team(id).stages||{})[stage] || {};
+      const hints = sd.hints || []; const k = Object.keys(pz.slots).find(k => ans[k] !== pz.slots[k].ans && !hints.includes(k)) || Object.keys(pz.slots).find(k => !hints.includes(k) && ans[k] !== pz.slots[k].ans);
+      if (!k){ toast("Your blanks are all right already. Press Check!"); break; }
+      Store.update(tp, {stages:{[stage]:{hints:[...hints, k]}}}); break; }
+    case "simrun": App.sims.cur && App.sims.cur.run(); break;
+    case "simreset": App.sims.cur && App.sims.cur.reset(); break;
+    case "simspeed": if (App.sims.cur){ App.sims.cur.speed = App.sims.cur.speed === 1 ? 2 : 1; b.textContent = App.sims.cur.speed === 1 ? "×2" : "×1"; } break;
+    case "simdone": App.local["sim" + T + currentStage(T)] = 1; render(); break;
+    case "ctick": { const stage = currentStage(T), sd = (team(T).stages||{})[stage] || {}; const k = "c" + b.dataset.i; Store.update(tp, {stages:{[stage]:{check:{[k]: !((sd.check||{})[k])}}}}); Snd.click(); break; }
+    case "calljudge": { const stage = currentStage(T), sd = (team(T).stages||{})[stage] || {}, log = ($("#englog-" + stage) || {}).value || "";
+      const ticks = Object.values(sd.check || {}).filter(Boolean).length;
+      if (ticks < 3 || log.trim().length < 8){ toast("Tick all three test steps and write your engineering log first.", "var(--signal)"); break; }
+      Store.update(tp, {judge:{stage, at:Date.now(), log:log.trim()}, stages:{[stage]:{log:log.trim()}}, returned:{stage:null}}); Snd.judge(); break; }
+    case "lev": { const d = App.draft["rub" + T]; d.levels[b.dataset.c] = +b.dataset.l; Snd.click(); render(); break; }
+    case "ican": { const d = App.draft["rub" + T]; d.ican[b.dataset.i] = b.dataset.v; render(); break; }
+    case "rubsubmit": { const d = App.draft["rub" + T], sc = rubricScore(tcfg(T).challenge, d.levels); Store.update(tp, {rubric:{levels:d.levels, ican:d.ican, score:sc.score, band:bandOf(sc.score)[0], at:Date.now()}}); Snd.good(); break; }
+    case "star": { const sp = st().spotlight || "t1", d = App.draft["fb" + sp]; d.stars[b.dataset.k] = +b.dataset.n; render(); break; }
+    case "glow": case "grow": { const sp = st().spotlight || "t1", d = App.draft["fb" + sp]; d[a] = b.dataset.v; render(); break; }
+    case "fbsend": { const sp = st().spotlight || "t1", d = App.draft["fb" + sp]; d.note = ($("#fbnote-" + sp) || {}).value || ""; Store.set("feedback/" + T + "__" + sp, {from:T, to:sp, stars:d.stars, glow:d.glow, grow:d.grow, note:d.note.slice(0,120), session:s.session, at:Date.now()}); Snd.good(); break; }
+    case "qans": Store.update(tp, {quiz:{[s.quiz.i]:{c:+b.dataset.i, at:Date.now()}}}); Snd.click(); break;
+    case "exitsend": { const d = App.draft["exit" + T]; document.querySelectorAll("[data-exit]").forEach(t => d["a" + t.dataset.exit] = t.value); Store.update(tp, {exit:{...d, at:Date.now()}}); Snd.good(); break; }
+  }
+});
+function body_force(){ const b = $("#tbody"); if (b) b.dataset.key = ""; render(); }
+
+/* input drafts */
+let roleTimer = null;
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset.role){ clearTimeout(roleTimer); const roles = {}; document.querySelectorAll("[data-role]").forEach(i => roles[i.dataset.role] = i.value.slice(0,40)); roleTimer = setTimeout(() => Store.update("teams/" + App.teamId, {roles}), 700); }
+  if (el.id && el.id.startsWith("fbnote-")){ const sp = el.id.slice(7); if (App.draft["fb" + sp]) App.draft["fb" + sp].note = el.value; }
+  if (el.dataset.exit != null){ const d = App.draft["exit" + App.teamId]; if (d) d["a" + el.dataset.exit] = el.value; }
+});
+let logTimer = null;
+document.addEventListener("input", e => { const el = e.target; if (el.id && el.id.startsWith("englog-")){ const stage = el.id.slice(7); App.draft["log" + App.teamId + stage] = el.value; clearTimeout(logTimer); logTimer = setTimeout(() => Store.update("teams/" + App.teamId, {stages:{[stage]:{log: el.value.slice(0,240)}}}), 900); } });
+
+document.addEventListener("keydown", e => {
+  if (App.view !== "control" || !App.unlocked || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === "ArrowRight" || e.key === "PageDown") goPhase(1);
+  if (e.key === "ArrowLeft" || e.key === "PageUp") goPhase(-1);
+  if (e.key === "h" || e.key === "H"){ App.dockHidden = !App.dockHidden; render(); }
+  if (e.key === "f" || e.key === "F"){ try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch(err){} }
+});
+
+/* ---------- teacher panels ---------- */
+function openTeamsPanel(){
+  const s = st();
+  overlay(`<div class="panel card" style="max-width:820px"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Teams · manual controls</h3><button class="btn sm ghost" onclick="closeOverlay()">Close</button></div>
+    <p class="muted" style="margin:0">Use these when a team's device can't sync, or to award a bonus for great teamwork.</p>
+    ${TEAM_IDS.map(id => { const c = tcfg(id), t = team(id), p = points(id); return `<div class="crit" style="--tc:${c.color}"><div class="ch"><span style="display:flex;gap:.6em;align-items:center">${emb(id)}<b>${esc(c.name)}</b> <span class="muted">${esc(CH[c.challenge].name)} · ${TRACK_NAMES[c.track]}</span></span><span class="disp">${p.total} pts</span></div>
+      <div class="checkrow">${stagesOf(id).map(x => t.verified && t.verified[x] ? `<button class="btn sm" data-act="munverify" data-team="${id}" data-stage="${x}">Undo ${x}</button>` : `<button class="btn sm good" data-act="mverify" data-team="${id}" data-stage="${x}">Verify ${x}</button>`).join("")}
+      <span class="muted">Bonus ${t.bonus||0}</span><button class="btn sm" data-act="bonus" data-team="${id}" data-n="5">+5</button><button class="btn sm" data-act="bonus" data-team="${id}" data-n="-5">−5</button>
+      <span class="muted">${Store.online[id] ? "● online" : ""}</span></div></div>`; }).join("")}
+    <div class="checkrow"><button class="btn bad sm" data-act="reset">Start a new class…</button></div></div>`);
+}
+function openSetup(){
+  const c = cfg();
+  const el = overlay(`<form class="panel card" id="setupf" style="max-width:820px"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Setup</h3><button type="button" class="btn sm ghost" onclick="closeOverlay()">Close</button></div>
+    <div class="grid2" style="font-size:14px">
+      <label class="fld">Class<input type="text" id="s-class" value="${esc(c.className)}"></label>
+      <label class="fld">Code lab length (minutes)<input type="number" id="s-lab" min="5" max="60" value="${c.labMin}"></label>
+      <label class="fld">Teacher PIN<input type="text" id="s-pin" value="${esc(c.pin)}" maxlength="8"></label>
+      <label class="fld">Join link for the QR code<input type="text" id="s-url" value="${esc(c.joinUrl || JOIN_URL_DEFAULT)}" placeholder="https://…"></label>
+    </div>
+    ${TEAM_IDS.map((id,i) => { const t = c.teams[id]; return `<div class="crit"><div class="grid2" style="grid-template-columns:repeat(4,minmax(0,1fr));font-size:13px">
+      <label class="fld">Team ${i+1} name<input type="text" id="s-${id}-name" value="${esc(t.name)}" maxlength="18"></label>
+      <label class="fld">Colour<input type="text" id="s-${id}-color" value="${esc(t.color)}" maxlength="9"></label>
+      <label class="fld">Challenge<select id="s-${id}-ch"><option value="maze" ${t.challenge==="maze"?"selected":""}>Maze Solver</option><option value="sumo" ${t.challenge==="sumo"?"selected":""}>Sumo Push</option></select></label>
+      <label class="fld">Levels<select id="s-${id}-tr">${Object.entries(TRACK_NAMES).map(([k,v]) => `<option value="${k}" ${t.track===k?"selected":""}>${v}</option>`).join("")}</select></label></div></div>`; }).join("")}
+    <div class="checkrow"><button class="btn pri" type="submit">Save setup</button><span class="muted" style="font-size:13px">Changing a challenge mid-lab resets nothing, but that team sees a new puzzle.</span></div></form>`, {sticky:true});
+  el.querySelector("#setupf").addEventListener("submit", e => { e.preventDefault(); const v = id => el.querySelector("#" + id).value.trim();
+    const teams = {}; TEAM_IDS.forEach(id => teams[id] = {name: v(`s-${id}-name`) || c.teams[id].name, color: /^#[0-9a-f]{3,8}$/i.test(v(`s-${id}-color`)) ? v(`s-${id}-color`) : c.teams[id].color, challenge: v(`s-${id}-ch`), track: v(`s-${id}-tr`)});
+    const labMin = Math.max(5, Math.min(60, +v("s-lab") || 20));
+    Store.set("arena/config", {teams, labMin, pin: v("s-pin") || "2026", joinUrl: v("s-url"), className: v("s-class") || "Grade 6A"});
+    const s = st(); if (s && !labStarted()) setState({timer:{dur: labMin*60000}});
+    closeOverlay(); toast("Setup saved"); });
+}
+function openExits(){
+  overlay(`<div class="panel card" style="max-width:820px"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Exit tickets</h3><button class="btn sm ghost" onclick="closeOverlay()">Close</button></div>
+    ${TEAM_IDS.map(id => { const c = tcfg(id), e = team(id).exit || {}; return `<div class="crit"><b style="color:${c.color}">${esc(c.name)}</b>${CH[c.challenge].exit.map((q,i) => `<div><div class="muted" style="font-size:13px">${esc(q)}</div><div>${esc(e["a"+i] || "—")}</div></div>`).join("")}</div>`; }).join("")}</div>`);
+}
+async function makeReport(){
+  const s = st(), rc = race();
+  const rows = TEAM_IDS.map(id => { const c = tcfg(id), t = team(id), p = points(id), r = rc.find(x => x.id === id), fbs = feedbacks().filter(f => f.to === id);
+    const avg = fbs.length ? (fbs.reduce((a,f) => a + ((f.stars.explain||0)+(f.stars.challenge||0)+(f.stars.team||0))/3, 0)/fbs.length).toFixed(1) : "–";
+    const qc = QUIZ.filter((q,i) => ((t.quiz||{})[i]||{}).c === q.a).length;
+    return `<tr><td>${esc(c.name)}</td><td>${esc(CH[c.challenge].name)}</td><td>${stagesOf(id).map(x => `${x}: ${t.verified&&t.verified[x] ? fmt(t.verified[x].ms) : "—"}`).join("<br>")}</td><td>${r.medal||"—"}</td><td>${Object.values(t.stages||{}).reduce((n,sd)=>n+(sd.hints||[]).length,0)}</td><td>${t.rubric ? t.rubric.score + " (" + t.rubric.band + ")" : "—"}</td><td>${qc}/${QUIZ.length}</td><td>${avg} (${fbs.length})</td><td>${p.total}</td></tr>`; }).join("");
+  const logs = TEAM_IDS.map(id => { const t = team(id), c = tcfg(id); return `<h3>${esc(c.name)}</h3><p><b>Roles:</b> ${ROLES.map(r => `${r.name}: ${esc((t.roles||{})[r.id]||"—")}`).join(" · ")}</p>${stagesOf(id).map(x => `<p><b>${x} log:</b> ${esc(((t.stages||{})[x]||{}).log||"—")}</p>`).join("")}<p><b>Exit ticket:</b> ${CH[c.challenge].exit.map((q,i) => `${esc(q)} → ${esc((t.exit||{})["a"+i]||"—")}`).join("<br>")}</p>${feedbacks().filter(f => f.to === id).map(f => `<p>Feedback from ${esc(tcfg(f.from).name)}: glow “${esc(f.glow)}”, grow “${esc(f.grow)}” ${f.note ? "· " + esc(f.note) : ""}</p>`).join("")}`; }).join("");
+  const html = `<!doctype html><meta charset="utf-8"><title>Echo Arena report</title><style>body{font:14px/1.5 Segoe UI,Arial;margin:32px;color:#111}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eef3fb}h1{margin:0}</style>
+    <h1>Echo Arena · lesson report</h1><p>${esc(cfg().className)} · mBot2 Maze Solver (Project 10) & Sumo Push (Project 14) · ${new Date().toLocaleString()}</p>
+    <table><tr><th>Team</th><th>Challenge</th><th>Stage times</th><th>Medal</th><th>Hints</th><th>Self-assessment /10</th><th>Brain check</th><th>Peer rating (n)</th><th>Points</th></tr>${rows}</table>${logs}`;
+  try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], {type:"text/html"})); a.download = "Echo-Arena-report-" + new Date().toISOString().slice(0,10) + ".html"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast("Report downloaded"); return; } catch(e){}
+  overlay(`<div class="panel card" style="max-width:900px"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Lesson report</h3><button class="btn sm ghost" onclick="closeOverlay()">Close</button></div><div style="background:#fff;color:#111;border-radius:10px;padding:12px;overflow:auto;max-height:60vh">${html.replace(/<!doctype html>|<meta[^>]*>|<title>.*?<\/title>|<style>.*?<\/style>/gs,"")}</div></div>`);
+}
+
+/* ---------------- Ticker (timer display only) ---------------- */
+let lastSec = null;
+setInterval(() => {
+  const s = st(); if (!s) return;
+  const rem = remainingMs(), started = labStarted();
+  document.querySelectorAll("[data-timer]").forEach(el => { el.textContent = fmt(rem); el.classList.toggle("low", started && rem < 120000 && rem > 0); el.classList.toggle("out", started && rem <= 0); });
+  const sec = Math.ceil(rem/1000);
+  if (App.view === "control" && s.timer && s.timer.running && sec !== lastSec && sec <= 10 && sec > 0) Snd.tick();
+  if (lastSec !== null && lastSec > 0 && sec <= 0 && s.timer && s.timer.running && App.view !== "team"){ Snd.fanfare(); toast("<b>TIME!</b>&nbsp;Hands off the robots.", "var(--bad)"); }
+  if (App.view === "team" && s.phase === "lab" && ((lastSec > 0 && sec <= 0) || (lastSec === null))) { const b = $("#tbody"); if (b && lastSec !== null) { b.dataset.key = ""; render(); } }
+  lastSec = sec;
+}, 250);
+
+/* ---------------- Boot ---------------- */
+window.addEventListener("hashchange", () => { Object.assign(App, parseHash()); App.seenFinish = null; if (App.view === "control" && App.unlocked) bootControl(); $("#app").dataset.key = ""; render(); });
+Store.on(() => {
+  if (App.view === "team" && st()){
+    const s = st(); if (App._session && App._session !== s.session){ App.draft = {}; App.local = {}; App.seenFinish = null; } App._session = s.session;
+  }
+  render();
+});
+(async function boot(){
+  Object.assign(App, parseHash());
+  try { App.unlocked = sessionStorage.getItem("echoArena.unlocked") === "1"; } catch(e){}
+  render();
+  await Store.init();
+  App.bootAt = Date.now();
+  if (!st() && Store.mode === "server" && App.view !== "control") setTimeout(render, 50);
+  if (App.view === "control" && App.unlocked) bootControl();
+  render();
+})();
+</script>
+</body>
+</html>
