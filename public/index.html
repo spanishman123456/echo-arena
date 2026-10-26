@@ -27,16 +27,38 @@
   --f-body:"Lexend","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
   --r:14px;
+  --tcmix:100%;
+  --on-accent:#04201D;
+  --bar-bg:rgba(10,18,34,.8);
+  --dock-bg:rgba(9,15,29,.96);
+  --ov-bg:rgba(4,8,18,.82);
+  --code-bg:radial-gradient(circle,#2a3a5e 1px,transparent 1.5px) 0 0/18px 18px, #101a2f;
+  --grid:rgba(36,52,90,.25);
+  --glow:rgba(56,225,210,.10);
+  --ring:rgba(56,225,210,.045);
 }
+/* Calm look: soft mist background, white panels, deep teal accent (default) */
+:root[data-look="calm"]{
+  color-scheme: light;
+  --ink:#E8EDF2; --ink-2:#FFFFFF; --ink-3:#F2F5F8; --line:#D2DBE5;
+  --fg:#1C2B3F; --muted:#5D6D83;
+  --sonar:#0E8F86; --signal:#B86400; --ok:#1E9150; --bad:#CC3653;
+  --gold:#C29312; --silver:#7C889A; --bronze:#B0662E;
+  --tcmix:60%; --on-accent:#FFFFFF;
+  --bar-bg:rgba(255,255,255,.88); --dock-bg:rgba(255,255,255,.97); --ov-bg:rgba(232,237,242,.9);
+  --code-bg:radial-gradient(circle,#d3dbe6 1px,transparent 1.5px) 0 0/18px 18px, #F8FAFC;
+  --grid:rgba(40,70,100,.06); --glow:rgba(14,143,134,.10); --ring:rgba(14,143,134,.06);
+}
+*{--tct:color-mix(in srgb,var(--tc,currentColor) var(--tcmix),var(--fg))}
 html,body{height:100%}
 [hidden]{display:none!important}
 body{margin:0;background:var(--ink);color:var(--fg);font:400 15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
 .bgfx{position:fixed;inset:0;pointer-events:none;z-index:0;background:
-  radial-gradient(1200px 700px at 50% 115%, rgba(56,225,210,.10), transparent 60%),
-  repeating-radial-gradient(circle at 50% 115%, transparent 0 78px, rgba(56,225,210,.045) 79px 80px),
-  linear-gradient(rgba(36,52,90,.25) 1px, transparent 1px) 0 0/48px 48px,
-  linear-gradient(90deg, rgba(36,52,90,.25) 1px, transparent 1px) 0 0/48px 48px}
+  radial-gradient(1200px 700px at 50% 115%, var(--glow), transparent 60%),
+  repeating-radial-gradient(circle at 50% 115%, transparent 0 78px, var(--ring) 79px 80px),
+  linear-gradient(var(--grid) 1px, transparent 1px) 0 0/48px 48px,
+  linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/48px 48px}
 #app{position:relative;z-index:1;min-height:100%}
 .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 h1,h2,h3{margin:0;text-wrap:balance;line-height:1.1}
@@ -53,10 +75,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .btn:hover{border-color:var(--sonar)}
 .btn:active{transform:translateY(1px)}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
-.btn.pri{background:var(--sonar);color:#04201D;border-color:transparent}
+.btn.pri{background:var(--sonar);color:var(--on-accent);border-color:transparent}
 .btn.pri:hover{filter:brightness(1.08)}
-.btn.warn{background:var(--signal);color:#2B1700;border-color:transparent}
-.btn.good{background:var(--ok);color:#052814;border-color:transparent}
+.btn.warn{background:var(--signal);color:var(--on-accent);border-color:transparent}
+.btn.good{background:var(--ok);color:var(--on-accent);border-color:transparent}
 .btn.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
 .btn.ghost{background:transparent}
 .btn.sm{padding:6px 10px;border-radius:9px;font-size:13px}
@@ -66,18 +88,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
 .dot.live{background:var(--ok);box-shadow:0 0 0 0 rgba(75,227,138,.7);animation:pulse 1.8s infinite}
 @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(75,227,138,0)}100%{box-shadow:0 0 0 0 rgba(75,227,138,0)}}
-.panel{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r)}
+.panel{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 2px rgba(20,40,70,.05)}
 input[type=text],input[type=number],input[type=password],textarea,select{width:100%;box-sizing:border-box;background:var(--ink);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;font:inherit}
 textarea{resize:vertical;min-height:70px}
 label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 
 /* team emblem */
-.emb{--tc:var(--sonar);width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 22%, var(--ink-2));border:2px solid var(--tc);color:var(--tc);font-family:var(--f-display);font-size:20px;position:relative}
+.emb{--tc:var(--sonar);width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 22%, var(--ink-2));border:2px solid var(--tc);color:var(--tct);font-family:var(--f-display);font-size:20px;position:relative}
 .emb svg{width:70%;height:70%}
 .emb.big{width:72px;height:72px;border-radius:18px;font-size:34px}
 
 /* top bar */
-.bar{display:flex;align-items:center;gap:16px;padding-block:12px;border-bottom:1px solid var(--line);background:rgba(10,18,34,.8);backdrop-filter:blur(8px);position:sticky;top:env(safe-area-inset-top,0px);z-index:5;flex-wrap:wrap}
+.bar{display:flex;align-items:center;gap:16px;padding-block:12px;border-bottom:1px solid var(--line);background:var(--bar-bg);backdrop-filter:blur(8px);position:sticky;top:env(safe-area-inset-top,0px);z-index:5;flex-wrap:wrap}
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:34px;height:34px}
 .logo b{font-family:var(--f-display);font-size:20px;letter-spacing:.02em}
@@ -92,7 +114,7 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .rail{display:flex;gap:6px;flex-wrap:wrap}
 .rail .ph{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:transparent}
 .rail .ph.done{color:var(--fg);border-color:#33507f}
-.rail .ph.cur{background:var(--sonar);color:#04201D;border-color:transparent;font-weight:700}
+.rail .ph.cur{background:var(--sonar);color:var(--on-accent);border-color:transparent;font-weight:700}
 
 /* landing */
 .land{max-width:1100px;margin:0 auto;padding-block:40px 60px;display:grid;gap:28px}
@@ -102,8 +124,8 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .hero p{max-width:60ch;color:var(--muted);font-size:17px;margin:0}
 .teamgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
 .tcard{--tc:var(--sonar);text-align:left;display:grid;gap:12px;padding:18px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 14%,var(--ink-2)),var(--ink-2) 60%);transition:transform .15s,border-color .2s}
-.tcard:hover{transform:translateY(-3px);border-color:var(--tc)}
-.tcard h3{font-family:var(--f-display);font-size:24px;color:var(--tc)}
+.tcard:hover{transform:translateY(-3px);border-color:var(--tct)}
+.tcard h3{font-family:var(--f-display);font-size:24px;color:var(--tct)}
 
 /* screen (projector) */
 .screen{font-size:clamp(14px,1.05vw,22px)}
@@ -140,7 +162,7 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 /* mission cards */
 .mcard{--tc:var(--sonar);padding:1.1em 1.2em;border-radius:18px;border:1px solid var(--line);background:linear-gradient(170deg,color-mix(in srgb,var(--tc) 12%,var(--ink-2)),var(--ink-2) 55%);display:grid;gap:.7em;align-content:start}
 .mcard .hd{display:flex;align-items:center;gap:.7em}
-.mcard h3{font-family:var(--f-display);font-size:1.35em;color:var(--tc)}
+.mcard h3{font-family:var(--f-display);font-size:1.35em;color:var(--tct)}
 .tierline{display:flex;gap:.5em;flex-wrap:wrap}
 .tier{font-size:.78em;font-weight:700;padding:.25em .7em;border-radius:999px;letter-spacing:.06em;text-transform:uppercase}
 .tier.silver{background:color-mix(in srgb,var(--silver) 20%,transparent);color:var(--silver);border:1px solid var(--silver)}
@@ -160,13 +182,13 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .lane{--tc:var(--sonar);display:grid;grid-template-columns:minmax(11em,1.1fr) minmax(0,3fr) minmax(8em,auto);gap:1em;align-items:center;padding:.8em 1em;border-radius:18px;border:1px solid var(--line);background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 14%,var(--ink-2)),var(--ink-2) 40%)}
 @media (max-width:900px){.lane{grid-template-columns:1fr}}
 .lane .who{display:flex;align-items:center;gap:.7em;min-width:0}
-.lane .who b{font-family:var(--f-display);font-size:1.2em;color:var(--tc);display:block}
+.lane .who b{font-family:var(--f-display);font-size:1.2em;color:var(--tct);display:block}
 .track{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:.4em;align-items:center}
 .stg{display:grid;gap:.3em}
 .stg .lbl{font-size:.7em;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
 .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.25em}
 .steps span{height:.8em;border-radius:4px;background:var(--ink);border:1px solid var(--line);position:relative}
-.steps span.on{background:var(--tc);border-color:var(--tc)}
+.steps span.on{background:var(--tc);border-color:var(--tct)}
 .steps span.pend{background:var(--signal);border-color:var(--signal);animation:blink 1s steps(2) infinite}
 .stepnames{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.25em;font-size:.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .lane .res{display:flex;align-items:center;gap:.6em;justify-content:flex-end}
@@ -182,8 +204,7 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .jcard .log{font-size:.88em;color:var(--fg);background:var(--ink);border-radius:10px;padding:.5em .7em;max-height:6em;overflow:auto}
 
 /* code blocks (mBlock look) */
-.prog{font:600 14px/1.2 var(--f-body);color:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:16px;background:
-  radial-gradient(circle,#2a3a5e 1px,transparent 1.5px) 0 0/18px 18px, #101a2f;border-radius:14px;border:1px solid var(--line);overflow-x:auto;min-width:0}
+.prog{font:600 14px/1.2 var(--f-body);color:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:16px;background:var(--code-bg);border-radius:14px;border:1px solid var(--line);overflow-x:auto;min-width:0}
 .prog .ln{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
 .blk{--c:#4C97FF;display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:7px;background:var(--c);box-shadow:inset 0 -2px 0 rgba(0,0,0,.18);white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.25)}
 .blk.hat{border-radius:22px 22px 7px 7px;padding-top:11px}
@@ -204,7 +225,7 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .slot.ok{border-color:var(--ok);background:#E9FFF2;color:#0b3b20}
 .slot[disabled]{cursor:default}
 @keyframes wob{50%{transform:translateY(-1px)}}
-.pop{position:fixed;z-index:60;background:var(--ink-3);border:1px solid var(--sonar);border-radius:14px;padding:8px;display:grid;gap:6px;box-shadow:0 18px 50px rgba(0,0,0,.5);max-width:min(92vw,360px)}
+.pop{position:fixed;z-index:60;background:var(--ink-2);border:1px solid var(--sonar);border-radius:14px;padding:8px;display:grid;gap:6px;box-shadow:0 18px 50px rgba(20,30,50,.25);max-width:min(92vw,360px)}
 .pop button{text-align:left;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--ink-2);font-weight:600}
 .pop button:hover{border-color:var(--sonar)}
 .pop .q{font-size:12px;color:var(--muted);padding:2px 4px}
@@ -212,7 +233,7 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 /* team view */
 .tv{max-width:1180px;margin:0 auto;padding-block:18px 60px;display:grid;gap:18px}
 .tvhead{--tc:var(--sonar);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.tvhead h1{font-family:var(--f-display);font-size:clamp(26px,4vw,40px);color:var(--tc)}
+.tvhead h1{font-family:var(--f-display);font-size:clamp(26px,4vw,40px);color:var(--tct)}
 .tvhead .grow{flex:1}
 .pts{font-family:var(--f-display);font-size:22px;padding:4px 12px;border-radius:12px;background:var(--ink-2);border:1px solid var(--line)}
 .stepper{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -269,7 +290,7 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .ican .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--ink)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{padding:6px 10px;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--muted)}
-.seg button.on{background:var(--sonar);color:#04201D}
+.seg button.on{background:var(--sonar);color:var(--on-accent)}
 
 /* quiz */
 .qcard{display:grid;gap:1em}
@@ -286,11 +307,11 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 /* podium */
 .podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2em;align-items:end;max-width:1100px;margin:0 auto;width:100%}
 .pod{--tc:var(--sonar);display:grid;justify-items:center;gap:.6em;text-align:center}
-.pod .plinth{width:100%;border-radius:16px 16px 0 0;display:grid;place-items:center;font-family:var(--f-display);font-size:2.4em;color:var(--ink);padding:.3em 0}
+.pod .plinth{width:100%;border-radius:16px 16px 0 0;display:grid;place-items:center;font-family:var(--f-display);font-size:2.4em;color:rgba(0,0,0,.5);padding:.3em 0}
 .pod.p1 .plinth{height:4.4em;background:linear-gradient(var(--gold),#b78a1d)}
 .pod.p2 .plinth{height:3.2em;background:linear-gradient(var(--silver),#8995a6)}
 .pod.p3 .plinth{height:2.2em;background:linear-gradient(var(--bronze),#8e5226)}
-.pod b{font-family:var(--f-display);font-size:1.4em;color:var(--tc)}
+.pod b{font-family:var(--f-display);font-size:1.4em;color:var(--tct)}
 .pod.empty{opacity:.35}
 table.sb{width:100%;border-collapse:collapse;font-size:.95em}
 table.sb th,table.sb td{padding:.55em .7em;border-bottom:1px solid var(--line);text-align:left}
@@ -314,7 +335,7 @@ table.sb td.n{text-align:right;font-variant-numeric:tabular-nums}
 .chips button.on{border-color:var(--sonar);color:var(--sonar);background:color-mix(in srgb,var(--sonar) 10%,var(--ink))}
 
 /* dock */
-.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(9,15,29,.96);border-top:1px solid var(--line);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--dock-bg);border-top:1px solid var(--line);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .dock .in{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-block:10px}
 .dock .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-right:10px;border-right:1px solid var(--line)}
 .dock .grp:last-child{border-right:0}
@@ -323,7 +344,7 @@ table.sb td.n{text-align:right;font-variant-numeric:tabular-nums}
 .showdock:hover{opacity:1}
 
 /* overlays */
-.ov{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(4,8,18,.82);backdrop-filter:blur(6px);padding:20px}
+.ov{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:var(--ov-bg);backdrop-filter:blur(6px);padding:20px}
 .ov .card{max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:22px;display:grid;gap:14px}
 .cere{display:grid;justify-items:center;gap:14px;text-align:center;animation:rise .7s cubic-bezier(.2,1.4,.4,1)}
 .cere h2{font-family:var(--f-display);font-size:clamp(34px,6vw,76px);line-height:1}
@@ -332,7 +353,7 @@ table.sb td.n{text-align:right;font-variant-numeric:tabular-nums}
 @keyframes swing{50%{transform:rotate(4deg)}}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:90}
 .toasts{position:fixed;top:calc(80px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:70;display:grid;gap:8px;max-width:min(380px,90vw)}
-.toast{--tc:var(--sonar);padding:12px 14px;border-radius:14px;background:var(--ink-3);border:1px solid var(--tc);box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center;animation:rise .4s ease-out;font-weight:500}
+.toast{--tc:var(--sonar);padding:12px 14px;border-radius:14px;background:var(--ink-2);border:1px solid var(--tc);box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center;animation:rise .4s ease-out;font-weight:500}
 
 /* film */
 .film{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#000;width:100%;max-width:min(100%,calc((100vh - 240px) * 16 / 9));margin:0 auto}
@@ -356,6 +377,7 @@ table.sb td.n{text-align:right;font-variant-numeric:tabular-nums}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 "use strict";
+try { document.documentElement.dataset.look = JSON.parse(localStorage.getItem("echoArena.look") || '"calm"'); } catch(e){ document.documentElement.dataset.look = "calm"; }
 /* =====================================================================
    ECHO ARENA — live mBot2 sensor challenge for 4 teams
    Views: landing · team-1..4 · screen (projector) · control (projector + teacher dock)
@@ -381,7 +403,7 @@ const DEFAULT_CONFIG = {
     t3:{name:"Orcas",    color:"#FF6FB1", challenge:"maze", track:"sg"},
     t4:{name:"Swifts",   color:"#B4E34A", challenge:"sumo", track:"sg"}
   },
-  labMin: 20, pin: "2026", joinUrl: "", className: "Grade 6A"
+  labMin: 20, pin: "2026", joinUrl: "", className: "Grade 6A", theme: "calm"
 };
 const TRACKS = { sg:["silver","gold"], s:["silver"], g:["gold"] };
 const TRACK_NAMES = { sg:"Silver → Gold", s:"Silver only", g:"Gold only" };
@@ -650,27 +672,73 @@ const GLOW = ["Clear explanation","Smart sensor use","Great debugging story","Ev
 const GROW = ["Show the code more slowly","Explain the numbers you changed","Say more about the sensor","Share what you'd improve","Let more members speak"];
 const RETURN_REASONS = ["Hit a wall","Left the ring","Didn't stop at the exit","No full-power push","Code doesn't match the robot"];
 
-/* ---------------- Sound ---------------- */
+/* ---------------- Sound: soft bells, marimba and air, with a little room reverb ---------------- */
 const Snd = (() => {
-  let ctx = null, on = lsGet("echoArena.sound", true);
-  const ac = () => { if (!ctx){ try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} } if (ctx && ctx.state === "suspended") ctx.resume(); return ctx; };
-  function tone(f, d=.15, type="sine", vol=.15, when=0, slide=0){
+  let ctx = null, master = null, verb = null, on = lsGet("echoArena.sound", true);
+  function impulse(sec){ const n = Math.floor(ctx.sampleRate*sec), b = ctx.createBuffer(2, n, ctx.sampleRate); for (let ch = 0; ch < 2; ch++){ const d = b.getChannelData(ch); for (let i = 0; i < n; i++) d[i] = (Math.random()*2 - 1) * Math.pow(1 - i/n, 3.2); } return b; }
+  function ac(){
+    if (!ctx){ try {
+      ctx = new (window.AudioContext||window.webkitAudioContext)();
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3; comp.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = .9; master.connect(comp);
+      verb = ctx.createConvolver(); verb.buffer = impulse(2.4); const wet = ctx.createGain(); wet.gain.value = .35; verb.connect(wet).connect(comp);
+    } catch(e){ ctx = null; } }
+    if (ctx && ctx.state === "suspended") ctx.resume(); return ctx;
+  }
+  function out(node, rev){ node.connect(master); if (rev){ const g = ctx.createGain(); g.gain.value = rev; node.connect(g).connect(verb); } }
+  function env(t, a, d, vol){ const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); return g; }
+  // FM bell: a glassy, warm chime
+  function bell(f, when=0, dur=1.6, vol=.08, rev=.6, bright=1.4){
     const c = ac(); if (!c || !on) return; const t = c.currentTime + when;
-    const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    const car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain();
+    car.type = "sine"; mod.type = "sine"; car.frequency.value = f; mod.frequency.value = f * 3.5;
+    mg.gain.setValueAtTime(f * bright, t); mg.gain.exponentialRampToValueAtTime(1, t + dur * .7);
+    mod.connect(mg).connect(car.frequency);
+    const g = env(t, .004, dur, vol); car.connect(g); out(g, rev);
+    car.start(t); mod.start(t); car.stop(t + dur + .1); mod.stop(t + dur + .1);
+  }
+  // marimba: a soft wooden tap
+  function marimba(f, when=0, vol=.06, rev=.25){
+    const c = ac(); if (!c || !on) return; const t = c.currentTime + when;
+    [[1, 1, .55], [4, .18, .12], [10, .05, .05]].forEach(([m, v, d]) => {
+      const o = c.createOscillator(); o.type = "sine"; o.frequency.value = f * m; const g = env(t, .003, d, vol * v); o.connect(g); out(g, rev); o.start(t); o.stop(t + d + .05); });
+  }
+  // pad: a soft chord, detuned triangles through a low-pass
+  function pad(freqs, when=0, dur=2.4, vol=.035){
+    const c = ac(); if (!c || !on) return; const t = c.currentTime + when;
+    const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400; const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    lp.connect(g); out(g, .7);
+    freqs.forEach(f => [-4, 4].forEach(dt => { const o = c.createOscillator(); o.type = "triangle"; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + dur + .1); }));
+  }
+  // air: filtered noise for whooshes and shakers
+  function air(when=0, dur=.5, vol=.05, from=600, to=3000, q=.8, rev=.4){
+    const c = ac(); if (!c || !on) return; const t = c.currentTime + when;
+    const n = c.createBufferSource(), b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * dur)), c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random()*2 - 1; n.buffer = b;
+    const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = q; bp.frequency.setValueAtTime(from, t); bp.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + dur*.45); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(bp).connect(g); out(g, rev); n.start(t); n.stop(t + dur);
+  }
+  // plain tone for the film and simulators; harsh waveforms are softened
+  function tone(f, d=.15, type="sine", vol=.1, when=0, slide=0){
+    const c = ac(); if (!c || !on) return; const t = c.currentTime + when;
+    const o = c.createOscillator(); o.type = (type === "square" || type === "sawtooth") ? "triangle" : type; o.frequency.setValueAtTime(f, t);
     if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .05);
+    const g = env(t, .008, d, vol * .8); o.connect(g); out(g, .3); o.start(t); o.stop(t + d + .05);
   }
   return {
     get on(){ return on; }, set on(v){ on = v; lsSet("echoArena.sound", v); },
-    ctx: ac, tone,
-    ping(){ tone(1850,.35,"sine",.12,0,900); tone(1850,.25,"sine",.04,.18,1000); },
-    click(){ tone(600,.05,"square",.04); },
-    good(){ [523,659,784,1046].forEach((f,i)=>tone(f,.18,"triangle",.14,i*.08)); },
-    bad(){ tone(220,.18,"sawtooth",.08); tone(180,.25,"sawtooth",.07,.12); },
-    judge(){ tone(880,.12,"square",.07); tone(880,.12,"square",.07,.2); },
-    fanfare(){ [[523,0],[659,.12],[784,.24],[1046,.36],[784,.6],[1046,.72]].forEach(([f,w])=>{tone(f,.35,"sawtooth",.07,w);tone(f/2,.35,"triangle",.08,w);}); },
-    tick(){ tone(1200,.04,"square",.05); }
+    ctx: ac, tone, bell, marimba, pad, air,
+    ping(){ tone(1320, .5, "sine", .05, 0, 1180); tone(1320, .4, "sine", .018, .22, 1180); },
+    click(){ marimba(988, 0, .045, .15); },
+    whoosh(){ air(0, .55, .045, 400, 2600, .9, .5); },
+    good(){ [1046.5, 1318.5, 1568, 2093].forEach((f, i) => bell(f, i * .085, 1.4, .055, .55, 1.1)); air(.05, .6, .015, 3000, 7000, .6, .6); },
+    bad(){ marimba(392, 0, .06, .3); marimba(330, .14, .055, .3); },
+    judge(){ bell(784, 0, 1.6, .075, .6, 1.2); bell(622.3, .32, 1.9, .07, .6, 1.2); },
+    fanfare(){ pad([261.6, 329.6, 392, 523.3], 0, 3.2, .04); [523.3, 659.3, 784, 1046.5, 1318.5].forEach((f, i) => bell(f, .08 + i * .12, 2.2, .06, .7, 1.2)); air(0, 1.1, .03, 300, 5000, .7, .7); },
+    timeup(){ bell(196, 0, 3.5, .1, .8, .9); bell(293.7, .02, 3.2, .06, .8, .9); },
+    tick(){ marimba(1760, 0, .02, .1); }
   };
 })();
 document.addEventListener("pointerdown", () => Snd.ctx(), {once:true});
@@ -1099,11 +1167,11 @@ class Film {
     if (i !== this.spoken){ this.spoken = i; this.speak(this.scenes[i].say); }
     const bpm = 112, b = Math.floor(this.t * bpm / 60);
     if (b !== this.beat){ this.beat = b;
-      if (i >= 3 || (i === 2 && lt > 5)){ Snd.tone(70,.22,"sine",.32,0,40); if (b % 2) Snd.tone(9000,.03,"square",.012); }
-      if (b % 4 === 0) Snd.tone(i >= 6 ? 110 : 55, 1.8, "sawtooth", .025);
+      if (i >= 3 || (i === 2 && lt > 5)){ Snd.tone(70,.22,"sine",.32,0,40); if (b % 2) Snd.air(0, .06, .012, 6000, 9000, 1.5, .1); }
+      if (b % 4 === 0) Snd.pad(i >= 6 ? [130.8, 196, 261.6] : [65.4, 98, 130.8], 0, 2.2, .03);
       if ((i === 0 || i === 1) && b % 3 === 0) Snd.ping();
-      if (i === 3 && lt < 4){ const rate = 1 + Math.floor(lt*1.5); for (let k = 0; k < rate; k++) Snd.tone(1400,.06,"square",.04,k*(.5/rate)); }
-      if (i === 6 && lt > 9.4){ Snd.tone(220,.3,"square",.1); }
+      if (i === 3 && lt < 4){ const rate = 1 + Math.floor(lt*1.5); for (let k = 0; k < rate; k++) Snd.tone(1400,.08,"sine",.045,k*(.5/rate)); }
+      if (i === 6 && lt > 9.4){ Snd.bell(440, 0, 1.2, .06, .5, 1); }
     }
   }
   speak(text){
@@ -1234,6 +1302,7 @@ function render(){ if (renderQueued) return; renderQueued = true; const go = () 
 function region(el, key, fn){ if (!el) return; if (el.dataset.key !== key){ el.dataset.key = key; el.innerHTML = fn(); } }
 
 function doRender(){
+  const look = cfg().theme || "calm"; if (document.documentElement.dataset.look !== look){ document.documentElement.dataset.look = look; lsSet("echoArena.look", look); }
   const app = $("#app");
   if (App.view === "landing") return renderLanding(app);
   if (App.view === "team") return renderTeam(app);
@@ -1434,7 +1503,7 @@ function sShare(stage, s, ctrl){
   const key = "share|" + sp + JSON.stringify(fbs) + JSON.stringify([t.stages, t.verified, t.rubric]);
   const avg = k => fbs.length ? (fbs.reduce((a,f) => a + ((f.stars||{})[k]||0), 0)/fbs.length).toFixed(1) : "–";
   region(stage, key, () => `
-    <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Share & feedback · team ${TEAM_IDS.indexOf(sp)+1} of 4</div><h2 class="big" style="color:${c.color}">${esc(c.name)} presents</h2></div>
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Share & feedback · team ${TEAM_IDS.indexOf(sp)+1} of 4</div><h2 class="big" style="color:color-mix(in srgb,${c.color} var(--tcmix),var(--fg))">${esc(c.name)} presents</h2></div>
       <div class="tierline">${TEAM_IDS.map(id => `<span class="chip ${id===sp?"on":""}">${esc(tcfg(id).name)}</span>`).join("")}</div></div>
     <div class="spot">
       <div style="display:grid;gap:1em">
@@ -1458,7 +1527,7 @@ function sQuiz(stage, s, ctrl){
   const key = "quiz|" + JSON.stringify(qz) + JSON.stringify(ans);
   region(stage, key, () => `
     <div style="display:flex;justify-content:space-between;align-items:end;gap:1em;flex-wrap:wrap"><div><div class="eyebrow">Brain check · question ${qz.i+1} of ${QUIZ.length}</div><h2 class="big">Sensor sense</h2></div>
-      <div class="tierline">${ans.map(([id,a]) => `<span class="chip ${a?"on":""}" style="${a?`border-color:${tcfg(id).color};color:${tcfg(id).color}`:""}">${esc(tcfg(id).name)} ${a ? "✓" : "…"}</span>`).join("")}</div></div>
+      <div class="tierline">${ans.map(([id,a]) => `<span class="chip ${a?"on":""}" style="${a?`border-color:color-mix(in srgb,${tcfg(id).color} var(--tcmix),var(--fg));color:color-mix(in srgb,${tcfg(id).color} var(--tcmix),var(--fg))`:""}">${esc(tcfg(id).name)} ${a ? "✓" : "…"}</span>`).join("")}</div></div>
     ${!qz.open ? `<div class="wait"><div class="sonar" style="width:220px"><i></i><i></i><i></i><div class="core"></div></div><h2>Get ready…</h2></div>` : `
     <div class="qcard"><div class="qtext">${esc(q.q)}</div>
       <div class="qopts">${q.o.map((o,i) => { const who = ans.filter(([,a]) => a && a.c === i).map(([id]) => id); const cls = qz.reveal ? (i === q.a ? "right" : "dim") : "";
@@ -1631,7 +1700,7 @@ function tShare(body, id, s){
   if (!App.draft[dk]) App.draft[dk] = ex && ex.session === s.session ? clone(ex) : {stars:{}, glow:"", grow:"", note:""};
   const d = App.draft[dk], sent = ex && ex.session === s.session, spc = tcfg(sp);
   region(body, "tsfb|" + sp + JSON.stringify(d) + (sent?1:0), () => `
-    <div class="labcols"><div class="panel box" style="--tc:${spc.color}"><div class="eyebrow">Feedback for</div><div style="display:flex;align-items:center;gap:12px">${emb(sp, true)}<h3 style="font-size:26px;color:${spc.color}">${esc(spc.name)}</h3></div>
+    <div class="labcols"><div class="panel box" style="--tc:${spc.color}"><div class="eyebrow">Feedback for</div><div style="display:flex;align-items:center;gap:12px">${emb(sp, true)}<h3 style="font-size:26px;color:color-mix(in srgb,${spc.color} var(--tcmix),var(--fg))">${esc(spc.name)}</h3></div>
       ${[["explain","They explained the code"],["challenge","They shared a real challenge"],["team","Everyone took part"]].map(([k,l]) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>${l}</span><span class="starpick">${[1,2,3,4,5].map(n => `<button class="${(d.stars[k]||0)>=n?"on":""}" data-act="star" data-k="${k}" data-n="${n}" aria-label="${n} stars">★</button>`).join("")}</span></div>`).join("")}
       <div><div class="eyebrow" style="color:var(--ok)">Glow · one thing they did well</div><div class="chips" style="margin-top:6px">${GLOW.map(g => `<button class="${d.glow===g?"on":""}" data-act="glow" data-v="${esc(g)}">${esc(g)}</button>`).join("")}</div></div>
       <div><div class="eyebrow" style="color:var(--signal)">Grow · one suggestion</div><div class="chips" style="margin-top:6px">${GROW.map(g => `<button class="${d.grow===g?"on":""}" data-act="grow" data-v="${esc(g)}">${esc(g)}</button>`).join("")}</div></div>
@@ -1684,7 +1753,7 @@ function watchTeamEvents(id){
 function ceremony(id){
   const r = race().find(x => x.id === id), c = tcfg(id); if (!r || !r.medal) return;
   const title = {gold:"GOLD", silver:"SILVER", bronze:"BRONZE", finisher:"FINISHER"}[r.medal];
-  overlay(`<div class="cere" style="--tc:${c.color}">${medalSVG(r.medal, 260)}<div class="eyebrow">Mission complete · place ${r.place}</div><h2 style="color:var(--${r.medal === "finisher" ? "sonar" : r.medal})">${title}</h2><div class="disp" style="font-size:clamp(28px,4vw,48px);color:${c.color}">${esc(c.name)}</div><div class="mono tnum" style="font-size:22px">${fmt(r.ms)}</div><button class="btn ghost" onclick="closeOverlay()">Continue</button></div>`);
+  overlay(`<div class="cere" style="--tc:${c.color}">${medalSVG(r.medal, 260)}<div class="eyebrow">Mission complete · place ${r.place}</div><h2 style="color:var(--${r.medal === "finisher" ? "sonar" : r.medal})">${title}</h2><div class="disp" style="font-size:clamp(28px,4vw,48px);color:color-mix(in srgb,${c.color} var(--tcmix),var(--fg))">${esc(c.name)}</div><div class="mono tnum" style="font-size:22px">${fmt(r.ms)}</div><button class="btn ghost" onclick="closeOverlay()">Continue</button></div>`);
   Snd.fanfare(); confetti(4200); setTimeout(() => { const o = $("#ov"); if (o && o.querySelector(".cere")) closeOverlay(); }, 9000);
 }
 
@@ -1709,7 +1778,7 @@ function goPhase(dir){
   if (ph === "lab" && !labStarted()) patch.timer = {running:true, startedAt:Date.now(), acc:0, dur:(s.timer && s.timer.dur) || cfg().labMin*60000};
   if (s.phase === "lab" && ph !== "lab" && s.timer && s.timer.running) patch.timer = {running:false, acc: elapsedMs(s.timer), startedAt:0};
   if (ph !== "intro" && App.film){ App.film.pause(); App.film.stopVoice(); }
-  setState(patch); Snd.click();
+  setState(patch); Snd.whoosh();
 }
 
 document.addEventListener("click", e => {
@@ -1823,6 +1892,7 @@ function openSetup(){
     <div class="grid2" style="font-size:14px">
       <label class="fld">Class<input type="text" id="s-class" value="${esc(c.className)}"></label>
       <label class="fld">Code lab length (minutes)<input type="number" id="s-lab" min="5" max="60" value="${c.labMin}"></label>
+      <label class="fld">Colours<select id="s-theme"><option value="calm" ${(c.theme||"calm")==="calm"?"selected":""}>Calm light (easy on the eyes)</option><option value="dark" ${c.theme==="dark"?"selected":""}>Arena dark</option></select></label>
       <label class="fld">Teacher PIN<input type="text" id="s-pin" value="${esc(c.pin)}" maxlength="8"></label>
       <label class="fld">Your own YouTube video for Ignite (optional)<input type="text" id="s-video" value="${esc(c.videoUrl || "")}" placeholder="https://www.youtube.com/watch?v=…"></label>
       <label class="fld">Join link for the QR code<input type="text" id="s-url" value="${esc(c.joinUrl || JOIN_URL_DEFAULT)}" placeholder="https://…"></label>
@@ -1836,13 +1906,13 @@ function openSetup(){
   el.querySelector("#setupf").addEventListener("submit", e => { e.preventDefault(); const v = id => el.querySelector("#" + id).value.trim();
     const teams = {}; TEAM_IDS.forEach(id => teams[id] = {name: v(`s-${id}-name`) || c.teams[id].name, color: /^#[0-9a-f]{3,8}$/i.test(v(`s-${id}-color`)) ? v(`s-${id}-color`) : c.teams[id].color, challenge: v(`s-${id}-ch`), track: v(`s-${id}-tr`)});
     const labMin = Math.max(5, Math.min(60, +v("s-lab") || 20));
-    Store.set("arena/config", {teams, labMin, pin: v("s-pin") || "2026", joinUrl: v("s-url"), videoUrl: v("s-video"), className: v("s-class") || "Grade 6A"});
+    Store.set("arena/config", {teams, labMin, pin: v("s-pin") || "2026", joinUrl: v("s-url"), videoUrl: v("s-video"), theme: v("s-theme"), className: v("s-class") || "Grade 6A"});
     const s = st(); if (s && !labStarted()) setState({timer:{dur: labMin*60000}});
     closeOverlay(); toast("Setup saved"); });
 }
 function openExits(){
   overlay(`<div class="panel card" style="max-width:820px"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Exit tickets</h3><button class="btn sm ghost" onclick="closeOverlay()">Close</button></div>
-    ${TEAM_IDS.map(id => { const c = tcfg(id), e = team(id).exit || {}; return `<div class="crit"><b style="color:${c.color}">${esc(c.name)}</b>${CH[c.challenge].exit.map((q,i) => `<div><div class="muted" style="font-size:13px">${esc(q)}</div><div>${esc(e["a"+i] || "—")}</div></div>`).join("")}</div>`; }).join("")}</div>`);
+    ${TEAM_IDS.map(id => { const c = tcfg(id), e = team(id).exit || {}; return `<div class="crit"><b style="color:color-mix(in srgb,${c.color} var(--tcmix),var(--fg))">${esc(c.name)}</b>${CH[c.challenge].exit.map((q,i) => `<div><div class="muted" style="font-size:13px">${esc(q)}</div><div>${esc(e["a"+i] || "—")}</div></div>`).join("")}</div>`; }).join("")}</div>`);
 }
 async function makeReport(){
   const s = st(), rc = race();
@@ -1866,7 +1936,7 @@ setInterval(() => {
   document.querySelectorAll("[data-timer]").forEach(el => { el.textContent = fmt(rem); el.classList.toggle("low", started && rem < 120000 && rem > 0); el.classList.toggle("out", started && rem <= 0); });
   const sec = Math.ceil(rem/1000);
   if (App.view === "control" && s.timer && s.timer.running && sec !== lastSec && sec <= 10 && sec > 0) Snd.tick();
-  if (lastSec !== null && lastSec > 0 && sec <= 0 && s.timer && s.timer.running && App.view !== "team"){ Snd.fanfare(); toast("<b>TIME!</b>&nbsp;Hands off the robots.", "var(--bad)"); }
+  if (lastSec !== null && lastSec > 0 && sec <= 0 && s.timer && s.timer.running && App.view !== "team"){ Snd.timeup(); toast("<b>TIME!</b>&nbsp;Hands off the robots.", "var(--bad)"); }
   if (App.view === "team" && s.phase === "lab" && ((lastSec > 0 && sec <= 0) || (lastSec === null))) { const b = $("#tbody"); if (b && lastSec !== null) { b.dataset.key = ""; render(); } }
   lastSec = sec;
 }, 250);
