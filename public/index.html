@@ -1225,7 +1225,7 @@ function parseHash(){
 }
 
 let renderQueued = false;
-function render(){ if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; doRender(); }); }
+function render(){ if (renderQueued) return; renderQueued = true; const go = () => { if (!renderQueued) return; renderQueued = false; doRender(); }; requestAnimationFrame(go); setTimeout(go, 120); }
 function region(el, key, fn){ if (!el) return; if (el.dataset.key !== key){ el.dataset.key = key; el.innerHTML = fn(); } }
 
 function doRender(){
