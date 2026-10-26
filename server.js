@@ -36,7 +36,10 @@ function send(res, code, body, type = "application/json; charset=utf-8") {
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".json": "application/json" };
 
+const REDIRECT_TO = (process.env.REDIRECT_TO || "").replace(/\/$/, "");
+
 const server = http.createServer((req, res) => {
+  if (REDIRECT_TO){ res.writeHead(301, { Location: REDIRECT_TO + req.url, "Cache-Control": "no-store" }); return res.end(); }
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/api/sync" && req.method === "GET") {
     const who = (url.searchParams.get("who") || "").slice(0, 20);
