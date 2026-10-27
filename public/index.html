@@ -563,7 +563,7 @@ const PUZZLES = {
         c:{opts:["backward","forward"], ans:0, hint:"You are standing on the white edge. Which way gets you back into the ring?"},
         d:{opts:["3","30","300"], ans:1, hint:"The ring is 120 cm wide. Cap the opponent detection at a sensible distance."},
         e:{opts:["30","60","100"], ans:2, hint:"Commit! A hesitant push loses. Use full power."},
-        f:{opts:["30","100"], ans:0, hint:"A fast spin is too quick for the sensor to read. Scan slowly."}
+        f:{opts:["30","180","360"], ans:0, hint:"Turn a small step, then check the sensors again. A big turn swings right past the opponent."}
       },
       prog:[
         {k:"hat", c:"event", p:["when button",{d:"A"},"pressed"]},
@@ -576,7 +576,7 @@ const PUZZLES = {
             {k:"if", p:["if",{b:[US("1"),"<",{s:"d"}]},"then"], note:"priority 2", body:[
               {k:"cmd", c:"motion", p:["moves",{d:"forward"},"at",{s:"e"},"RPM"], note:"PUSH!"}
             ], els:[
-              {k:"cmd", c:"motion", p:["turns",{d:"right"},"at",{s:"f"},"RPM"], note:"scan"}
+              {k:"cmd", c:"motion", p:["turns",{d:"right"},{s:"f"},"° until done"], note:"scan"}
             ]}
           ]}
         ]}
@@ -1103,7 +1103,8 @@ class SumoSim {
       const d = this.sonar();
       if (this.edge()){ this.mode = "back"; this.until = .5; this.led = gold ? "#FF9F1C" : null; this.log("PRIORITY 1 · <b>edge!</b> quad rgb background in status → back up, turn 135°"); Snd.tone(520,.08,"square",.05); }
       else if (d < 30){ m.v = rpm(100); m.w = 0; this.led = gold ? "#FF3B3B" : null; this.log(`PRIORITY 2 · opponent at <b>${d} cm</b> → PUSH at 100 RPM`); }
-      else { m.v = 0; m.w = gold ? 2.2 : 1.6; this.led = gold ? "#FF9F1C" : null; this.log(`PRIORITY 3 · nothing under 30 cm (${d>300?"—":d+" cm"}) → scan right ${gold?"40":"30"} RPM`); }
+      else if (gold){ m.v = 0; m.w = 2.2; this.led = "#FF9F1C"; this.log(`PRIORITY 3 · nothing under 30 cm (${d>300?"—":d+" cm"}) → scan right 40 RPM`); }
+      else { this.mode = "turn"; this.turnLeft = 30*Math.PI/180; this.log(`PRIORITY 3 · nothing under 30 cm (${d>300?"—":d+" cm"}) → turns right 30° until done`); }
     }
     m.a += m.w*dt; m.x += Math.cos(m.a)*m.v*dt; m.y += Math.sin(m.a)*m.v*dt;
     // push contact
