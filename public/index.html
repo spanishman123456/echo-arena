@@ -222,6 +222,8 @@ label.fld{display:grid;gap:6px;font-size:13px;color:var(--muted)}
 .slot{border:2px dashed #fff;background:rgba(10,18,34,.55);color:#fff;border-radius:9px;padding:3px 10px;min-width:46px;font-weight:700;text-shadow:none;animation:wob 2.4s ease-in-out infinite;white-space:nowrap}
 .slot.filled{border-style:solid;background:#fff;color:#1b2440;animation:none}
 .slot.hinted{border-color:var(--signal);box-shadow:0 0 0 3px rgba(255,181,71,.45)}
+.slot.rich{background:transparent;color:#fff;border-style:solid;padding:2px 4px;display:inline-flex;align-items:center;gap:5px;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.slot.rich.ok{background:transparent;color:#fff}
 .slot.ok{border-color:var(--ok);background:#E9FFF2;color:#0b3b20}
 .slot[disabled]{cursor:default}
 @keyframes wob{50%{transform:translateY(-1px)}}
@@ -494,6 +496,8 @@ const CH = {
 /* ---- code puzzles: mBlock-style programs with blanks ---- */
 const C = {event:"#E6A100", control:"#F29B12", motion:"#4C97FF", sensor:"#0FAE80", sensorR:"#0B8F69", light:"#8A5CF5", sound:"#C252C2", op:"#4FB04F"};
 const US = (port="2") => ({r:["ultrasonic 2",{d:port},"distance to an object (cm)"], c:"sensorR"});
+const QRGB = () => ({b:["quad rgb sensor",{d:"1"},{d:"background"},"in status",{d:"(0) 0000"},"?"], bc:C.sensorR});
+const EDGE_PARTS = [QRGB(), "or", QRGB()];
 const PUZZLES = {
   maze: {
     silver:{
@@ -555,7 +559,7 @@ const PUZZLES = {
     silver:{
       slots:{
         a:{opts:["0","3","30"], ans:1, hint:"Real sumo has a hands-off start. How many seconds does the rule give?"},
-        b:{opts:["BOUNDARY: L2 or R2 detects background color?","OPPONENT: ultrasonic distance < 30","button A pressed?"], ans:0, hint:"Safety outranks attack. What must be checked FIRST in every loop?"},
+        b:{show:{0:EDGE_PARTS}, opts:["EDGE: quad rgb background in status (0) 0000? or quad rgb background in status (0) 0000?","OPPONENT: ultrasonic distance < 30","button A pressed?"], ans:0, hint:"Safety outranks attack. What must be checked FIRST in every loop?"},
         c:{opts:["backward","forward"], ans:0, hint:"You are standing on the white edge. Which way gets you back into the ring?"},
         d:{opts:["3","30","300"], ans:1, hint:"The ring is 120 cm wide. Cap the opponent detection at a sensible distance."},
         e:{opts:["30","60","100"], ans:2, hint:"Commit! A hesitant push loses. Use full power."},
@@ -581,7 +585,7 @@ const PUZZLES = {
     gold:{
       slots:{
         a:{opts:["1","2","10"], ans:1, hint:"Two openings, arc left or arc right. Like a coin flip."},
-        b:{opts:["BOUNDARY: L2 or R2 detects background color?","OPPONENT: ultrasonic distance < 30","LED is red?"], ans:0, hint:"Even with mind games, one check always stays on top of the loop."},
+        b:{show:{0:EDGE_PARTS}, opts:["EDGE: quad rgb background in status (0) 0000? or quad rgb background in status (0) 0000?","OPPONENT: ultrasonic distance < 30","LED is red?"], ans:0, hint:"Even with mind games, one check always stays on top of the loop."},
         c:{opts:["<",">"], ans:0, hint:"The opponent is CLOSE when the distance is SMALL."},
         d:{opts:["red","orange","off"], ans:0, hint:"The taunt: red means ATTACK, orange means searching."},
         e:{opts:["30","100"], ans:1, hint:"Full-power push, every time."},
@@ -911,8 +915,8 @@ function rParts(parts, ctx){
 }
 function rSlot(sid, ctx){
   const sl = ctx.slots[sid], v = ctx.answers[sid];
-  const cls = ["slot"]; if (v != null) cls.push("filled"); if (ctx.solved) cls.push("ok"); if ((ctx.hints||[]).includes(sid) && !ctx.solved) cls.push("hinted");
-  return `<button class="${cls.join(" ")}" data-act="slot" data-slot="${sid}" ${ctx.solved || ctx.locked ? "disabled" : ""} aria-label="Blank ${sid}: ${v != null ? esc(sl.opts[v]) : "empty"}">${v != null ? esc(sl.opts[v]) : "?"}</button>`;
+  const cls = ["slot"]; if (v != null) cls.push("filled"); if (v != null && sl.show && sl.show[v]) cls.push("rich"); if (ctx.solved) cls.push("ok"); if ((ctx.hints||[]).includes(sid) && !ctx.solved) cls.push("hinted");
+  return `<button class="${cls.join(" ")}" data-act="slot" data-slot="${sid}" ${ctx.solved || ctx.locked ? "disabled" : ""} aria-label="Blank ${sid}: ${v != null ? esc(sl.opts[v]) : "empty"}">${v != null ? (sl.show && sl.show[v] ? rParts(sl.show[v], ctx) : esc(sl.opts[v])) : "?"}</button>`;
 }
 function rNodes(nodes, ctx){
   return nodes.map(n => {
@@ -1097,7 +1101,7 @@ class SumoSim {
     else if (this.mode === "turn"){ m.v = 0; m.w = 2.6; this.turnLeft -= m.w*dt; if (this.turnLeft <= 0) this.mode = "loop"; }
     if (this.mode === "loop"){
       const d = this.sonar();
-      if (this.edge()){ this.mode = "back"; this.until = .5; this.led = gold ? "#FF9F1C" : null; this.log("PRIORITY 1 · <b>edge!</b> L2/R2 see the white line → back up, turn 135°"); Snd.tone(520,.08,"square",.05); }
+      if (this.edge()){ this.mode = "back"; this.until = .5; this.led = gold ? "#FF9F1C" : null; this.log("PRIORITY 1 · <b>edge!</b> quad rgb background in status → back up, turn 135°"); Snd.tone(520,.08,"square",.05); }
       else if (d < 30){ m.v = rpm(100); m.w = 0; this.led = gold ? "#FF3B3B" : null; this.log(`PRIORITY 2 · opponent at <b>${d} cm</b> → PUSH at 100 RPM`); }
       else { m.v = 0; m.w = gold ? 2.2 : 1.6; this.led = gold ? "#FF9F1C" : null; this.log(`PRIORITY 3 · nothing under 30 cm (${d>300?"—":d+" cm"}) → scan right ${gold?"40":"30"} RPM`); }
     }
